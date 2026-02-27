@@ -8,20 +8,36 @@ import { SurveyForm } from "@/components/survey/SurveyForm";
 import { SurveyorSubmissions } from "@/components/survey/SurveyorSubmissions";
 import { SurveyorProfile } from "@/components/survey/SurveyorProfile";
 import { CandidatePortal } from "@/components/candidate/CandidatePortal";
+import { CandidateReports } from "@/components/candidate/CandidateReports";
+import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ShieldCheck } from "lucide-react";
 
 export default function Home() {
   const [role, setRole] = useState<Role>("SURVEYOR");
-  const [activeView, setActiveView] = useState("Dashboard");
+  const [activeView, setActiveView] = useState("New Survey");
 
   const renderContent = () => {
     if (role === "ADMIN") {
-      return <AdminDashboard />;
+      switch (activeView) {
+        case "Dashboard":
+          return <AdminDashboard />;
+        default:
+          return <AdminDashboard />;
+      }
     }
 
     if (role === "CANDIDATE") {
-      return <CandidatePortal />;
+      switch (activeView) {
+        case "Ward Market":
+          return <CandidatePortal />;
+        case "My Reports":
+          return <CandidateReports />;
+        case "Analysis":
+          return <CandidateAnalysisOverview />;
+        default:
+          return <CandidatePortal />;
+      }
     }
 
     if (role === "SURVEYOR") {
@@ -42,7 +58,6 @@ export default function Home() {
 
   const handleRoleChange = (newRole: Role) => {
     setRole(newRole);
-    // Set default view for the role
     if (newRole === "ADMIN") setActiveView("Dashboard");
     if (newRole === "SURVEYOR") setActiveView("New Survey");
     if (newRole === "CANDIDATE") setActiveView("Ward Market");
