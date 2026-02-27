@@ -10,10 +10,15 @@ import {
   TrendingUp, 
   CheckCircle,
   FileSpreadsheet,
-  FileText
+  FileText,
+  ArrowLeft,
+  Users,
+  Activity,
+  MessageSquare
 } from "lucide-react";
 import { Ward } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { WardAnalysis } from "./WardAnalysis";
 
 const mockWards: Ward[] = [
   { id: "1", name: "Indiranagar", district: "Bengaluru Central", surveyCount: 1240, unlocked: true },
@@ -26,6 +31,29 @@ const mockWards: Ward[] = [
 
 export function CandidatePortal() {
   const [wards] = useState(mockWards);
+  const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
+
+  if (selectedWard) {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div className="flex items-center gap-4 mb-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedWard(null)}
+            className="rounded-full hover:bg-slate-100 h-10 w-10 p-0"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-headline font-extrabold text-slate-900 tracking-tight">{selectedWard.name} Analysis</h1>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{selectedWard.district}</p>
+          </div>
+        </div>
+        <WardAnalysis ward={selectedWard} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -38,7 +66,7 @@ export function CandidatePortal() {
         {wards.map((ward) => (
           <Card key={ward.id} className={cn(
             "group border-none shadow-sm transition-all duration-300 overflow-hidden bg-white", 
-            ward.unlocked ? "ring-2 ring-primary/20" : "hover:shadow-md"
+            ward.unlocked ? "ring-2 ring-primary/20 shadow-md" : "hover:shadow-md"
           )}>
             <div className={cn("h-1.5", ward.unlocked ? "bg-primary" : "bg-slate-100")} />
             <CardHeader className="pb-2 px-5 md:px-6">
@@ -79,7 +107,10 @@ export function CandidatePortal() {
               <div className="mt-6 flex flex-col gap-3">
                 {ward.unlocked ? (
                   <>
-                    <Button className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold h-12 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02]">
+                    <Button 
+                      onClick={() => setSelectedWard(ward)}
+                      className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold h-12 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02]"
+                    >
                       <TrendingUp className="w-4 h-4 mr-2" />
                       View Analysis
                     </Button>
