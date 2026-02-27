@@ -13,9 +13,19 @@ import {
   ShieldCheck,
   UserCircle
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Role } from "@/lib/types";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+} from "@/components/ui/sidebar";
 
 interface SidebarProps {
   role: Role;
@@ -23,8 +33,6 @@ interface SidebarProps {
 }
 
 export function AppSidebar({ role, onRoleChange }: SidebarProps) {
-  const pathname = usePathname();
-
   const navItems = {
     ADMIN: [
       { name: "Dashboard", icon: LayoutDashboard, href: "#" },
@@ -45,73 +53,89 @@ export function AppSidebar({ role, onRoleChange }: SidebarProps) {
     ],
   };
 
+  const currentItems = navItems[role];
+
   return (
-    <div className="w-64 border-r bg-white h-screen flex flex-col sticky top-0">
-      <div className="p-6 border-b flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-          <ShieldCheck className="w-6 h-6" />
-        </div>
-        <span className="font-headline font-bold text-xl tracking-tight text-slate-900">WardWise <span className="text-primary">Pro</span></span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-8">
-        <div>
-          <p className="px-3 mb-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Navigation</p>
-          <nav className="space-y-1">
-            {navItems[role].map((item) => (
-              <button
-                key={item.name}
-                className={cn(
-                  "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all group",
-                  item.name === "Dashboard" || item.name === "New Survey" || item.name === "Ward Market"
-                    ? "bg-primary/5 text-primary border-l-4 border-primary rounded-l-none"
-                    : "text-slate-600 hover:bg-slate-50"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={cn("w-4 h-4", item.name === "Dashboard" || item.name === "New Survey" || item.name === "Ward Market" ? "text-primary" : "text-slate-400 group-hover:text-primary")} />
-                  {item.name}
-                </div>
-                {item.name === "Dashboard" && <ChevronRight className="w-4 h-4 text-primary opacity-50" />}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="pt-4 border-t">
-          <p className="px-3 mb-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Demo: Switch Role</p>
-          <div className="space-y-2">
-            {(['ADMIN', 'SURVEYOR', 'CANDIDATE'] as Role[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => onRoleChange(r)}
-                className={cn(
-                  "w-full text-left px-3 py-1.5 text-xs rounded transition-colors",
-                  role === r ? "bg-primary text-white" : "hover:bg-slate-100 text-slate-500"
-                )}
-              >
-                {r.charAt(0) + r.slice(1).toLowerCase()} Mode
-              </button>
-            ))}
+    <Sidebar variant="sidebar" collapsible="offcanvas" className="border-r border-slate-100">
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+            <ShieldCheck className="w-5 h-5" />
           </div>
+          <span className="font-headline font-bold text-lg tracking-tight text-slate-900">
+            WardWise <span className="text-primary">Pro</span>
+          </span>
         </div>
-      </div>
+      </SidebarHeader>
 
-      <div className="p-4 border-t">
-        <div className="flex items-center gap-3 px-2 py-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {currentItems.map((item) => (
+                <SidebarMenuItem key={item.name}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={item.name === "Dashboard" || item.name === "New Survey" || item.name === "Ward Market"}
+                    className="group"
+                  >
+                    <button className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <item.icon className="w-4 h-4" />
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                      {item.name === "Dashboard" && <ChevronRight className="w-3 h-3 opacity-50" />}
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Role Selection
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="px-2 space-y-1">
+              {(['ADMIN', 'SURVEYOR', 'CANDIDATE'] as Role[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => onRoleChange(r)}
+                  className={cn(
+                    "w-full text-left px-3 py-1.5 text-xs rounded-md transition-all font-medium",
+                    role === r 
+                      ? "bg-primary text-white shadow-md shadow-primary/10" 
+                      : "text-slate-500 hover:bg-slate-50"
+                  )}
+                >
+                  {r.charAt(0) + r.slice(1).toLowerCase()} Mode
+                </button>
+              ))}
+            </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="p-4 border-t border-slate-50">
+        <div className="flex items-center gap-3 px-1 py-2 mb-4">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-[10px]">
             JD
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate text-slate-900">John Doe</p>
-            <p className="text-xs text-muted-foreground truncate">{role.toLowerCase()}@wardwise.pro</p>
+            <p className="text-xs font-bold truncate text-slate-900">John Doe</p>
+            <p className="text-[10px] text-slate-400 truncate uppercase font-medium">{role}</p>
           </div>
         </div>
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">
           <LogOut className="w-4 h-4" />
           Logout
         </button>
-      </div>
-    </div>
+      </SidebarFooter>
+    </Sidebar>
   );
 }
