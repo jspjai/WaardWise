@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +29,7 @@ export function SurveyorProfile() {
     <div className="space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="flex flex-col md:flex-row gap-6 md:items-start">
         {/* Profile Card */}
-        <Card className="w-full md:w-80 border-none shadow-sm bg-white shrink-0 overflow-hidden">
+        <Card className="w-full md:w-80 border-none shadow-sm bg-white shrink-0 overflow-hidden rounded-2xl md:rounded-3xl">
           <div className="h-24 bg-primary/10 relative">
             <div className="absolute -bottom-12 left-6">
               <div className="w-24 h-24 rounded-3xl bg-white p-1 shadow-md">
@@ -42,11 +41,11 @@ export function SurveyorProfile() {
           </div>
           <CardContent className="pt-16 pb-8 px-6">
             <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-headline font-extrabold text-slate-900 tracking-tight">John Doe</h2>
+              <div className="min-w-0">
+                <h2 className="text-xl font-headline font-extrabold text-slate-900 tracking-tight truncate">John Doe</h2>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Field Surveyor</p>
               </div>
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 shrink-0">
                 <Edit2 className="w-3.5 h-3.5 text-slate-400" />
               </Button>
             </div>
@@ -76,7 +75,7 @@ export function SurveyorProfile() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Assigned Ward</p>
-                  <p className="text-xs font-bold text-slate-700">Indiranagar (Ward 80)</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">Indiranagar (Ward 80)</p>
                 </div>
               </div>
             </div>
@@ -85,7 +84,7 @@ export function SurveyorProfile() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Status</span>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs font-bold text-emerald-600">Online</span>
                 </div>
               </div>
@@ -94,9 +93,9 @@ export function SurveyorProfile() {
         </Card>
 
         {/* Stats & Progress */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-6 w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all">
+            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency</p>
@@ -108,7 +107,7 @@ export function SurveyorProfile() {
               </div>
               <p className="text-[11px] text-emerald-600 font-bold mt-4">+3% from last week</p>
             </Card>
-            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all">
+            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submissions</p>
@@ -120,7 +119,7 @@ export function SurveyorProfile() {
               </div>
               <p className="text-[11px] text-slate-400 font-bold mt-4">Lifetime total</p>
             </Card>
-            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all">
+            <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Rank</p>
@@ -158,11 +157,11 @@ export function SurveyorProfile() {
           </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <Button variant="outline" className="h-14 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 shadow-sm">
+             <Button variant="outline" className="h-14 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 shadow-sm transition-all hover:bg-slate-50">
                <Shield className="w-4 h-4 mr-2 text-primary" />
                View Certifications
              </Button>
-             <Button className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-primary/20">
+             <Button className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01]">
                <TrendingUp className="w-4 h-4 mr-2" />
                View Full Performance
              </Button>

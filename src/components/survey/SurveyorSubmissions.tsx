@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -23,6 +22,7 @@ import {
   Calendar
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const mockSubmissions = [
   { id: "SVR-001", household: "Ramappa K.", ward: "Indiranagar", booth: "142", date: "2024-03-20", status: "Synced", sentiment: "Pro-Change" },
@@ -52,6 +52,7 @@ export function SurveyorSubmissions() {
         </div>
       </div>
 
+      {/* Mobile Card View */}
       <div className="grid grid-cols-1 md:hidden gap-4">
         {mockSubmissions.map((sub) => (
           <Card key={sub.id} className="border-none shadow-sm bg-white overflow-hidden">
@@ -61,7 +62,13 @@ export function SurveyorSubmissions() {
                   <h3 className="font-bold text-slate-900">{sub.household}</h3>
                   <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{sub.id}</p>
                 </div>
-                <Badge variant={sub.status === "Synced" ? "default" : "outline"} className={sub.status === "Synced" ? "bg-emerald-500" : "text-amber-500 border-amber-200 bg-amber-50"}>
+                <Badge 
+                  variant={sub.status === "Synced" ? "default" : "outline"} 
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5",
+                    sub.status === "Synced" ? "bg-emerald-500 hover:bg-emerald-600" : "text-amber-500 border-amber-200 bg-amber-50"
+                  )}
+                >
                   {sub.status === "Synced" ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
                   {sub.status}
                 </Badge>
@@ -85,7 +92,7 @@ export function SurveyorSubmissions() {
                 )}>
                   {sub.sentiment}
                 </span>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-slate-50">
                   <Eye className="w-4 h-4 text-slate-400" />
                 </Button>
               </div>
@@ -94,17 +101,18 @@ export function SurveyorSubmissions() {
         ))}
       </div>
 
+      {/* Desktop Table View */}
       <Card className="hidden md:block border-none shadow-sm bg-white overflow-hidden rounded-2xl">
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="hover:bg-transparent border-slate-50">
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">ID</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Household</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Booth</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sentiment</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</TableHead>
-              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Actions</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">ID</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">Household</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">Booth</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">Date</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">Sentiment</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4">Status</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 py-4 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -138,7 +146,7 @@ export function SurveyorSubmissions() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100">
                     <MoreVertical className="w-4 h-4 text-slate-400" />
                   </Button>
                 </TableCell>
