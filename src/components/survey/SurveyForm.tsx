@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,11 @@ import {
   Users,
   AlertTriangle,
   Building2,
-  FileText
+  FileText,
+  ShieldCheck,
+  Star,
+  Users2,
+  Vote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,23 +67,20 @@ export function SurveyForm() {
     setIsSubmitted(true);
   };
 
-  const RatingField = ({ label, icon: Icon }: { label: string, icon?: any }) => (
+  const RatingScale = ({ label, icon: Icon }: { label: string, icon?: any }) => (
     <div className="space-y-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="w-4 h-4 text-primary" />}
         <Label className="text-sm font-bold text-slate-800">{label}</Label>
       </div>
-      <div className="grid grid-cols-5 gap-1.5 md:gap-3">
+      <div className="grid grid-cols-5 gap-1.5">
         {[1, 2, 3, 4, 5].map((num) => (
           <button
             key={num}
             type="button"
-            className="h-12 md:h-14 rounded-lg border border-slate-200 bg-white flex flex-col items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all group"
+            className="h-12 rounded-lg border border-slate-200 bg-white flex flex-col items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all group focus:bg-primary focus:text-white"
           >
-            <span className="text-sm md:text-base font-bold">{num}</span>
-            <span className="hidden md:block text-[8px] uppercase font-bold opacity-50 group-hover:opacity-100">
-              {num === 1 ? 'Poor' : num === 5 ? 'Excel' : ''}
-            </span>
+            <span className="text-sm font-bold">{num}</span>
           </button>
         ))}
       </div>
@@ -107,7 +109,7 @@ export function SurveyForm() {
 
   return (
     <div className="max-w-2xl mx-auto py-4 md:py-8 px-2 md:px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-6 md:mb-8 bg-white/50 backdrop-blur-sm p-4 rounded-2xl sticky top-20 z-20 border border-white/50 shadow-sm">
+      <div className="mb-6 md:mb-8 bg-white/50 backdrop-blur-sm p-4 rounded-2xl sticky top-16 md:top-20 z-20 border border-white/50 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-md w-fit">
@@ -130,16 +132,16 @@ export function SurveyForm() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Ward Name</Label>
-                    <Input placeholder="Enter ward name" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                    <Input defaultValue="Indiranagar" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Booth Number</Label>
-                    <Input placeholder="e.g. 142" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                    <Input placeholder="e.g. 142" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Polling Station Name</Label>
-                  <Input placeholder="Enter station name" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                  <Input placeholder="Enter station name" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                 </div>
               </div>
             )}
@@ -148,16 +150,16 @@ export function SurveyForm() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Address / House Number</Label>
-                  <Input placeholder="123, 4th Main..." className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                  <Input placeholder="123, 4th Main..." className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Head of Family</Label>
-                    <Input placeholder="Enter full name" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                    <Input placeholder="Enter full name" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contact Number</Label>
-                    <Input placeholder="+91 XXXXX XXXXX" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                    <Input placeholder="+91 XXXXX XXXXX" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -177,7 +179,7 @@ export function SurveyForm() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Years in Locality</Label>
-                    <Input type="number" placeholder="Years" className="bg-slate-50 border-slate-100 h-12 rounded-xl focus:ring-primary/20" />
+                    <Input type="number" placeholder="Years" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                 </div>
               </div>
@@ -209,6 +211,72 @@ export function SurveyForm() {
               </div>
             )}
 
+            {step === 4 && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Primary Language Spoken</Label>
+                  <Select>
+                    <SelectTrigger className="bg-slate-50 border-slate-100 h-12 rounded-xl">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kannada">Kannada</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="tamil">Tamil</SelectItem>
+                      <SelectItem value="telugu">Telugu</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Community / Caste Group</Label>
+                  <Input placeholder="Enter community name" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Local Group Affiliations</Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {["Resident Welfare Association", "Youth Club", "Religious Organization", "Worker Union"].map((org) => (
+                      <div key={org} className="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <Checkbox id={org} />
+                        <label htmlFor={org} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{org}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Voters in House</Label>
+                    <Input type="number" placeholder="0" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Registered in Ward</Label>
+                    <Input type="number" placeholder="0" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Recent Voting Behavior</Label>
+                  <RadioGroup defaultValue="regular" className="space-y-2">
+                    {[
+                      { id: "regular", label: "Always vote in every election" },
+                      { id: "selective", label: "Only vote in major elections" },
+                      { id: "rare", label: "Rarely vote / Not interested" }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center space-x-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <RadioGroupItem value={item.id} id={item.id} />
+                        <Label htmlFor={item.id} className="text-sm font-medium">{item.label}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </div>
+            )}
+
             {step === 6 && (
               <div className="space-y-5">
                 <div className="flex items-center gap-2 mb-2 bg-amber-50 p-3 rounded-xl border border-amber-100">
@@ -228,15 +296,80 @@ export function SurveyForm() {
               </div>
             )}
 
-            {/* Default fallback for other steps - just to show structure */}
-            {(step === 4 || step === 5 || step === 7 || step === 8 || step === 9 || step === 10) && (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                <div className="p-4 bg-slate-50 rounded-full">
-                  <FileText className="w-8 h-8 text-slate-300" />
+            {step === 7 && (
+              <div className="space-y-6">
+                <RatingScale label="Satisfaction with Central Govt" icon={Building2} />
+                <RatingScale label="Satisfaction with State Govt" icon={Building2} />
+                <RatingScale label="Local MLA/Corporator Accessibility" icon={Users} />
+              </div>
+            )}
+
+            {step === 8 && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Preferred Local Leader</Label>
+                  <Input placeholder="Enter name of preferred candidate" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800">Section Content</h3>
-                  <p className="text-xs text-slate-500">Form fields for {SECTIONS[step-1]} go here.</p>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Key Quality Desired</Label>
+                  <Select>
+                    <SelectTrigger className="bg-slate-50 border-slate-100 h-12 rounded-xl">
+                      <SelectValue placeholder="Select quality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="trust">Trustworthiness</SelectItem>
+                      <SelectItem value="dev">Development Record</SelectItem>
+                      <SelectItem value="avail">Availability / Reach</SelectItem>
+                      <SelectItem value="party">Party Loyalty</SelectItem>
+                      <SelectItem value="identity">Community Identity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {step === 9 && (
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Perception of Safety for Women</Label>
+                  <RadioGroup defaultValue="good" className="space-y-2">
+                    {["Excellent", "Good", "Fair", "Poor"].map((level) => (
+                      <div key={level} className="flex items-center space-x-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <RadioGroupItem value={level.toLowerCase()} id={level} />
+                        <Label htmlFor={level} className="text-sm font-medium">{level}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Infrastructure (Check all available)</Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {["Street Lights in good condition", "CCTV Surveillance", "Local Police Patrolling", "Safe Public Toilets"].map((item) => (
+                      <div key={item} className="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <Checkbox id={item} />
+                        <label htmlFor={item} className="text-sm font-medium">{item}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 10 && (
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Likelihood to Vote for Incumbent Party</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Very Likely", "Likely", "Unlikely", "Undecided"].map((opt) => (
+                      <Button key={opt} type="button" variant="outline" className="h-14 rounded-xl border-slate-200 hover:border-primary hover:text-primary transition-all font-bold text-xs uppercase">
+                        {opt}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-sm font-bold text-slate-800">Top Reason for Choice</Label>
+                  <Textarea placeholder="Explain the main factor driving the respondent's political choice..." className="min-h-[100px] bg-slate-50 border-slate-100 rounded-2xl" />
                 </div>
               </div>
             )}
