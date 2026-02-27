@@ -1,4 +1,3 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -59,7 +58,7 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: Sid
   const currentItems = navItems[role];
 
   return (
-    <Sidebar variant="sidebar" collapsible="offcanvas" className="border-r border-slate-100">
+    <Sidebar variant="sidebar" collapsible="offcanvas" className="border-r border-slate-100 bg-white">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
