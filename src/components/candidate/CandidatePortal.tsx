@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Lock, 
   Unlock, 
-  Download, 
   TrendingUp, 
-  Map as MapIcon,
   CheckCircle,
   FileSpreadsheet,
   FileText
@@ -27,7 +25,7 @@ const mockWards: Ward[] = [
 ];
 
 export function CandidatePortal() {
-  const [wards, setWards] = useState(mockWards);
+  const [wards] = useState(mockWards);
 
   return (
     <div className="p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500">
