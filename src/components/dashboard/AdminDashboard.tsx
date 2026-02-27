@@ -78,10 +78,10 @@ export function AdminDashboard() {
                     <span className={cn("text-xs font-bold", stat.positive ? "text-emerald-500" : "text-red-500")}>
                       {stat.change}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">from last month</span>
+                    <span className="text-[10px] text-slate-400 font-medium ml-1">this month</span>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-primary/10 transition-colors">
                   <stat.icon className="w-5 h-5 text-slate-400 group-hover:text-primary" />
                 </div>
               </div>
@@ -120,7 +120,7 @@ export function AdminDashboard() {
             <CardTitle className="text-lg font-headline font-bold">Political Sentiment</CardTitle>
           </CardHeader>
           <CardContent className="h-[350px] flex flex-col items-center">
-            <ResponsiveContainer width="100%" height="240">
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
                   data={sentimentData}
