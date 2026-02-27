@@ -2,8 +2,8 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'WardWise Pro | Political Survey Tool',
-  description: 'Advanced ward-level political survey and data collection platform.',
+  title: 'TRS Group | Political Survey Tool',
+  description: 'Advanced ward-level political survey and data collection platform by TRS Group.',
 };
 
 export default function RootLayout({

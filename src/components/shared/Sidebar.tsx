@@ -65,7 +65,7 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: Sid
             <ShieldCheck className="w-5 h-5" />
           </div>
           <span className="font-headline font-bold text-lg tracking-tight text-slate-900">
-            WardWise <span className="text-primary">Pro</span>
+            TRS <span className="text-primary">Group</span>
           </span>
         </div>
       </SidebarHeader>
