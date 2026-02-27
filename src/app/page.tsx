@@ -4,6 +4,10 @@ import { useState } from "react";
 import { Role } from "@/lib/types";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
+import { WardsBooths } from "@/components/admin/WardsBooths";
+import { SurveyorsManagement } from "@/components/admin/SurveyorsManagement";
+import { DataExports } from "@/components/admin/DataExports";
+import { AdminSettings } from "@/components/admin/AdminSettings";
 import { SurveyForm } from "@/components/survey/SurveyForm";
 import { SurveyorSubmissions } from "@/components/survey/SurveyorSubmissions";
 import { SurveyorProfile } from "@/components/survey/SurveyorProfile";
@@ -14,14 +18,22 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { ShieldCheck } from "lucide-react";
 
 export default function Home() {
-  const [role, setRole] = useState<Role>("SURVEYOR");
-  const [activeView, setActiveView] = useState("New Survey");
+  const [role, setRole] = useState<Role>("ADMIN");
+  const [activeView, setActiveView] = useState("Dashboard");
 
   const renderContent = () => {
     if (role === "ADMIN") {
       switch (activeView) {
         case "Dashboard":
           return <AdminDashboard />;
+        case "Wards & Booths":
+          return <WardsBooths />;
+        case "Surveyors":
+          return <SurveyorsManagement />;
+        case "Data Exports":
+          return <DataExports />;
+        case "Settings":
+          return <AdminSettings />;
         default:
           return <AdminDashboard />;
       }
