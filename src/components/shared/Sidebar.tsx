@@ -1,3 +1,4 @@
+
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -30,26 +31,28 @@ import {
 interface SidebarProps {
   role: Role;
   onRoleChange: (role: Role) => void;
+  activeView: string;
+  onViewChange: (view: string) => void;
 }
 
-export function AppSidebar({ role, onRoleChange }: SidebarProps) {
+export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: SidebarProps) {
   const navItems = {
     ADMIN: [
-      { name: "Dashboard", icon: LayoutDashboard, href: "#" },
-      { name: "Wards & Booths", icon: Map, href: "#" },
-      { name: "Surveyors", icon: Users, href: "#" },
-      { name: "Data Exports", icon: TrendingUp, href: "#" },
-      { name: "Settings", icon: Settings, href: "#" },
+      { name: "Dashboard", icon: LayoutDashboard },
+      { name: "Wards & Booths", icon: Map },
+      { name: "Surveyors", icon: Users },
+      { name: "Data Exports", icon: TrendingUp },
+      { name: "Settings", icon: Settings },
     ],
     SURVEYOR: [
-      { name: "New Survey", icon: ClipboardList, href: "#" },
-      { name: "My Submissions", icon: LayoutDashboard, href: "#" },
-      { name: "Profile", icon: UserCircle, href: "#" },
+      { name: "New Survey", icon: ClipboardList },
+      { name: "My Submissions", icon: LayoutDashboard },
+      { name: "Profile", icon: UserCircle },
     ],
     CANDIDATE: [
-      { name: "Ward Market", icon: Map, href: "#" },
-      { name: "My Reports", icon: TrendingUp, href: "#" },
-      { name: "Analysis", icon: LayoutDashboard, href: "#" },
+      { name: "Ward Market", icon: Map },
+      { name: "My Reports", icon: TrendingUp },
+      { name: "Analysis", icon: LayoutDashboard },
     ],
   };
 
@@ -79,15 +82,16 @@ export function AppSidebar({ role, onRoleChange }: SidebarProps) {
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={item.name === "Dashboard" || item.name === "New Survey" || item.name === "Ward Market"}
+                    isActive={activeView === item.name}
                     className="group"
+                    onClick={() => onViewChange(item.name)}
                   >
                     <button className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
                         <item.icon className="w-4 h-4" />
                         <span className="font-medium">{item.name}</span>
                       </div>
-                      {item.name === "Dashboard" && <ChevronRight className="w-3 h-3 opacity-50" />}
+                      {activeView === item.name && <ChevronRight className="w-3 h-3 opacity-50" />}
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -107,7 +111,7 @@ export function AppSidebar({ role, onRoleChange }: SidebarProps) {
                   key={r}
                   onClick={() => onRoleChange(r)}
                   className={cn(
-                    "w-full text-left px-3 py-1.5 text-xs rounded-md transition-all font-medium",
+                    "w-full text-left px-3 py-1.5 text-[11px] rounded-md transition-all font-bold uppercase tracking-tight",
                     role === r 
                       ? "bg-primary text-white shadow-md shadow-primary/10" 
                       : "text-slate-500 hover:bg-slate-50"
@@ -128,7 +132,7 @@ export function AppSidebar({ role, onRoleChange }: SidebarProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold truncate text-slate-900">John Doe</p>
-            <p className="text-[10px] text-slate-400 truncate uppercase font-medium">{role}</p>
+            <p className="text-[10px] text-slate-400 truncate uppercase font-bold tracking-tight">{role}</p>
           </div>
         </div>
         <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">
