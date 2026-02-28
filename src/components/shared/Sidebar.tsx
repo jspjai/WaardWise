@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -32,9 +34,10 @@ interface SidebarProps {
   onRoleChange: (role: Role) => void;
   activeView: string;
   onViewChange: (view: string) => void;
+  userName: string;
 }
 
-export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: SidebarProps) {
+export function AppSidebar({ role, onRoleChange, activeView, onViewChange, userName }: SidebarProps) {
   const navItems = {
     ADMIN: [
       { name: "Dashboard", icon: LayoutDashboard },
@@ -56,6 +59,14 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: Sid
   };
 
   const currentItems = navItems[role];
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas" className="border-r border-slate-100 bg-white">
@@ -99,9 +110,10 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: Sid
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Local Role Switcher (Prototype Feature Only) */}
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Role Selection
+            Dev Mode: Role Selection
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2 space-y-1">
@@ -127,14 +139,17 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange }: Sid
       <SidebarFooter className="p-4 border-t border-slate-50">
         <div className="flex items-center gap-3 px-1 py-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-[10px]">
-            JD
+            {userName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold truncate text-slate-900">John Doe</p>
+            <p className="text-xs font-bold truncate text-slate-900">{userName}</p>
             <p className="text-[10px] text-slate-400 truncate uppercase font-bold tracking-tight">{role}</p>
           </div>
         </div>
-        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+        >
           <LogOut className="w-4 h-4" />
           Logout
         </button>

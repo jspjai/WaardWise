@@ -1,7 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
 
+// Firebase configuration using environment variables
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -11,9 +12,16 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Initialize Firebase only if the API key is present to prevent crashes during SSR
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+let auth: Auth | undefined;
 
+if (firebaseConfig.apiKey) {
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+}
+
+// Export as optional types or handle nulls in components
 export { app, db, auth };
