@@ -12,7 +12,7 @@ import {
   Filter,
   RefreshCw,
   Search,
-  CheckCircle2
+  Plus
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ const datasets = [
 
 export function DataExports() {
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">Data Exports</h1>
@@ -113,7 +113,7 @@ export function DataExports() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                  <Button className="flex-1 md:flex-none bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl h-11 px-6 font-bold text-xs uppercase transition-all">
+                  <Button variant="ghost" className="flex-1 md:flex-none bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl h-11 px-6 font-bold text-xs uppercase transition-all">
                     View
                   </Button>
                   <Button className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold text-xs uppercase shadow-lg shadow-primary/10 transition-all">
@@ -129,5 +129,3 @@ export function DataExports() {
     </div>
   );
 }
-
-const Plus = ({ className }: { className?: string }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>

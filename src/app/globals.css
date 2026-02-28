@@ -97,3 +97,13 @@
 .severity-high {
   @apply bg-[#FCF2F2] text-[#CB3942];
 }
+
+/* Ensure the sidebar backdrop and content are fully opaque and visible */
+[data-sidebar="sidebar"] {
+  background-color: hsl(var(--sidebar-background));
+  border-right: 1px solid hsl(var(--sidebar-border));
+}
+
+.group\/sidebar-wrapper {
+  background-color: #fcfcfd;
+}
