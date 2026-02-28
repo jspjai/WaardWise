@@ -1,0 +1,63 @@
+{
+  "collections": {
+    "users": [
+      {
+        "id": "admin-1",
+        "name": "Super Admin",
+        "email": "admin@trsgroup.com",
+        "role": "ADMIN"
+      },
+      {
+        "id": "surveyor-1",
+        "name": "Rahul Sharma",
+        "email": "rahul@trsgroup.com",
+        "role": "SURVEYOR",
+        "wardId": "ward-80"
+      },
+      {
+        "id": "candidate-1",
+        "name": "Vikram Singh",
+        "email": "vikram@trsgroup.com",
+        "role": "CANDIDATE"
+      }
+    ],
+    "wards": [
+      {
+        "id": "ward-80",
+        "name": "Indiranagar",
+        "district": "Bengaluru Central",
+        "booths": 24,
+        "surveyCount": 1240,
+        "activeSurveyors": 8
+      },
+      {
+        "id": "ward-81",
+        "name": "Malleshwaram",
+        "district": "Bengaluru North",
+        "booths": 18,
+        "surveyCount": 890,
+        "activeSurveyors": 6
+      }
+    ],
+    "surveys": [
+      {
+        "id": "survey-1",
+        "wardId": "ward-80",
+        "boothNumber": "142",
+        "surveyorId": "surveyor-1",
+        "sentiment": "Positive",
+        "topIssue": "Water Supply",
+        "notes": "Respondent was generally satisfied but concerned about summer water scarcity.",
+        "timestamp": "2024-03-20T10:00:00Z"
+      }
+    ],
+    "unlockedWards": [
+      {
+        "id": "unlock-1",
+        "candidateId": "candidate-1",
+        "wardId": "ward-80",
+        "unlockedAt": "2024-03-15T09:00:00Z"
+      }
+    ]
+  }
+}

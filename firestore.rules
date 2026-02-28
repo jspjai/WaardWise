@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper to check user roles
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && getRole() == 'ADMIN';
+    }
+
+    match /wards/{wardId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && getRole() == 'ADMIN';
+    }
+
+    match /surveys/{surveyId} {
+      allow read: if request.auth != null && (getRole() == 'ADMIN' || getRole() == 'SURVEYOR');
+      allow create: if request.auth != null && getRole() == 'SURVEYOR';
+      allow update, delete: if request.auth != null && getRole() == 'ADMIN';
+    }
+
+    match /unlockedWards/{unlockId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.candidateId || getRole() == 'ADMIN');
+      allow create: if request.auth != null && getRole() == 'CANDIDATE';
+    }
+  }
+}
