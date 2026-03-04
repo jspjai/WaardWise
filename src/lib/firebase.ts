@@ -12,16 +12,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase only if the API key is present to prevent crashes during SSR
+// Initialize Firebase only if the API key is present and looks valid
 let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-if (firebaseConfig.apiKey) {
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
+// Basic check to ensure API key isn't a placeholder or empty
+const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.apiKey.length > 10;
+
+if (hasValidConfig) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+  }
 }
 
-// Export as optional types or handle nulls in components
-export { app, db, auth };
+export { app, db, auth, hasValidConfig };
