@@ -4,24 +4,25 @@ An advanced political survey and data collection platform built for ward-level a
 
 ## 🚀 Quick Start (Local Setup)
 
-### 1. Initialize Firebase
-Go to the [Firebase Console](https://console.firebase.google.com/) and:
-1. **Create a Project**: Give it a name like `trs-group-portal`.
-2. **Enable Authentication**: Go to Build > Authentication > Get Started. Enable **Email/Password**.
-3. **Enable Firestore**: Go to Build > Firestore Database > Create Database. Start in **Production Mode** and choose a location.
-4. **Register Web App**: Click the `</>` icon on the project overview page. Copy the `firebaseConfig` object.
+### 1. Find Your Firebase Credentials
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Select your project.
+3. Click the **Project Settings** (gear icon) in the sidebar.
+4. Scroll down to **Your apps** and look for the **Firebase SDK snippet**.
+5. Select the **Config** radio button.
+6. Copy the values into your `.env` file (see below).
 
 ### 2. Configure Environment
-Create a `.env` file in the root directory and paste your config:
+Create/update your `.env` file in the root directory:
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_API_KEY=your_actual_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-# For AI Sentiment Analysis
+# For AI Sentiment Analysis (Get from Google AI Studio)
 GOOGLE_GENAI_API_KEY=your_gemini_api_key
 ```
 
@@ -30,8 +31,6 @@ Install Firebase CLI:
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase init firestore
-# Select your project and use the existing firestore.rules file
 firebase deploy --only firestore:rules
 ```
 
@@ -45,12 +44,6 @@ npm run dev
 - **Super Admin**: Access to master dashboard, ward management, and surveyor tracking.
 - **Field Surveyor**: Mobile-optimized survey entry with AI sentiment assistance.
 - **Candidate**: Marketplace for unlocking ward data and viewing strategic reports.
-
-## 🤖 AI Features
-Powered by **Genkit**, the platform automatically processes field notes to:
-- Extract overall sentiment (Positive/Neutral/Negative).
-- Identify key local issues (Water, Roads, etc.).
-- Summarize respondent pulse for quick reading.
 
 ---
 *Created by TRS Group Development Team*
