@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Role, User } from "@/lib/types";
-import { auth, db, isConfigValid, missing } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { Role, User as AppUser } from "@/lib/types";
+import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { WardsBooths } from "@/components/admin/WardsBooths";
@@ -25,134 +24,44 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: firebaseUser, isUserLoading } = useUser();
+  const db = useFirestore();
   const [activeView, setActiveView] = useState("");
-  const [demoMode, setDemoMode] = useState(false);
+  const [localUser, setLocalUser] = useState<AppUser | null>(null);
+
+  // Memoize the user doc reference to avoid infinite loops in hooks
+  const userDocRef = useMemoFirebase(() => {
+    if (!db || !firebaseUser) return null;
+    return doc(db, "users", firebaseUser.uid);
+  }, [db, firebaseUser]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc<AppUser>(userDocRef);
 
   useEffect(() => {
-    if (!isConfigValid || !auth || !db) {
-      setLoading(false);
-      return;
+    if (userData) {
+      setLocalUser(userData);
+      setDefaultView(userData.role);
+    } else if (firebaseUser && !isUserDataLoading) {
+      // Fallback for new users or if doc doesn't exist yet
+      const defaultUser: AppUser = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || "",
+        name: firebaseUser.email?.split('@')[0] || "User",
+        role: "SURVEYOR"
+      };
+      setLocalUser(defaultUser);
+      setDefaultView("SURVEYOR");
     }
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db!, "users", firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-            setUser(userData);
-            setDefaultView(userData.role);
-          } else {
-            const defaultUser: User = {
-              id: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              name: firebaseUser.email?.split('@')[0] || "User",
-              role: "SURVEYOR"
-            };
-            setUser(defaultUser);
-            setDefaultView("SURVEYOR");
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  }, [userData, firebaseUser, isUserDataLoading]);
 
   const setDefaultView = (role: Role) => {
+    if (activeView !== "") return; // Don't override if already set
     if (role === "ADMIN") setActiveView("Dashboard");
     else if (role === "SURVEYOR") setActiveView("New Survey");
     else if (role === "CANDIDATE") setActiveView("Ward Market");
   };
 
-  const launchDemo = () => {
-    setDemoMode(true);
-    setUser({
-      id: "demo-user",
-      name: "Demo Analyst",
-      email: "demo@trsgroup.com",
-      role: "ADMIN"
-    });
-    setActiveView("Dashboard");
-  };
-
-  if (!isConfigValid && !demoMode) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <div className="max-w-2xl w-full space-y-6">
-          <div className="text-center space-y-2 mb-8">
-            <div className="mx-auto w-16 h-16 bg-primary rounded-3xl flex items-center justify-center text-white shadow-xl shadow-primary/20 mb-4">
-              <ShieldCheck className="w-10 h-10" />
-            </div>
-            <h1 className="text-3xl font-headline font-extrabold text-slate-900">TRS Intelligence</h1>
-            <p className="text-slate-500 font-medium">Ward-Level Political Analysis Platform</p>
-          </div>
-
-          <Alert className="bg-white border-blue-100 shadow-xl rounded-3xl p-8 border-l-4 border-l-primary">
-            <KeyRound className="h-6 w-6 text-primary" />
-            <AlertTitle className="font-headline font-bold text-slate-900 text-lg ml-2">Firebase Configuration Required</AlertTitle>
-            <AlertDescription className="mt-4 text-slate-600 text-sm leading-relaxed">
-              We detected placeholder or missing variables. To enable real-time data sync and secure login, please update your <code className="bg-slate-100 px-1.5 py-0.5 rounded text-primary font-bold">.env</code> file with keys from your Firebase Console.
-              
-              <div className="mt-6 space-y-4">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Missing/Placeholder Variables:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {missing.map(key => (
-                      <Badge key={key} variant="outline" className="bg-red-50 text-red-600 border-red-100 font-mono text-[10px]">
-                        {key}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex gap-3 items-start">
-                  <Info className="w-4 h-4 text-blue-500 mt-0.5" />
-                  <p className="text-[11px] text-blue-700 leading-relaxed">
-                    <strong>Note:</strong> Messages about "packages looking for funding" during installation are normal informational notices and can be safely ignored.
-                  </p>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
-              <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
-                <Settings2 className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Setup Guide</p>
-                <p className="text-sm text-slate-600 mt-1">Copy credentials from <strong>Project Settings</strong> in Firebase to your environment file.</p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={launchDemo}
-              className="group bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 text-left transition-all hover:border-primary hover:shadow-md"
-            >
-              <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                <Play className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Quick Preview</p>
-                <p className="text-sm text-slate-600 mt-1 font-bold group-hover:text-primary transition-colors">Launch Demo Mode →</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (isUserLoading || (firebaseUser && isUserDataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
@@ -163,12 +72,14 @@ export default function Home() {
     );
   }
 
-  if (!user) {
+  if (!firebaseUser) {
     return <LoginForm />;
   }
 
   const renderContent = () => {
-    if (user.role === "ADMIN") {
+    if (!localUser) return null;
+
+    if (localUser.role === "ADMIN") {
       switch (activeView) {
         case "Dashboard": return <AdminDashboard />;
         case "Wards & Booths": return <WardsBooths />;
@@ -179,7 +90,7 @@ export default function Home() {
       }
     }
 
-    if (user.role === "CANDIDATE") {
+    if (localUser.role === "CANDIDATE") {
       switch (activeView) {
         case "Ward Market": return <CandidatePortal />;
         case "My Reports": return <CandidateReports />;
@@ -188,7 +99,7 @@ export default function Home() {
       }
     }
 
-    if (user.role === "SURVEYOR") {
+    if (localUser.role === "SURVEYOR") {
       switch (activeView) {
         case "New Survey": return <SurveyForm />;
         case "My Submissions": return <SurveyorSubmissions />;
@@ -201,19 +112,21 @@ export default function Home() {
   };
 
   const handleRoleChange = (newRole: Role) => {
-    setUser({ ...user, role: newRole });
-    setDefaultView(newRole);
+    if (localUser) {
+      setLocalUser({ ...localUser, role: newRole });
+      setDefaultView(newRole);
+    }
   };
 
   return (
     <SidebarProvider>
       <div className="flex bg-[#fcfcfd] min-h-screen w-full">
         <AppSidebar 
-          role={user.role} 
+          role={localUser?.role || 'SURVEYOR'} 
           onRoleChange={handleRoleChange} 
           activeView={activeView}
           onViewChange={setActiveView}
-          userName={user.name}
+          userName={localUser?.name || "User"}
         />
         
         <SidebarInset className="flex-1 flex flex-col min-w-0">
@@ -233,7 +146,7 @@ export default function Home() {
                       LIVE HUB
                     </Badge>
                     <span className="text-xs font-bold text-slate-700 ml-1">
-                      {user.role === 'SURVEYOR' ? 'Field Collection Console' : 'Ward Analytics Hub'}
+                      {localUser?.role === 'SURVEYOR' ? 'Field Collection Console' : 'Ward Analytics Hub'}
                     </span>
                   </div>
                 </div>
@@ -246,7 +159,7 @@ export default function Home() {
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Nominal</span>
               </div>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold text-xs">
-                {user.name.charAt(0).toUpperCase()}
+                {localUser?.name.charAt(0).toUpperCase()}
               </div>
             </div>
           </header>
