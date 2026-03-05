@@ -7,7 +7,7 @@ An advanced political survey and data collection platform built for ward-level a
 ### 1. Configure Firebase Credentials
 Update your `.env` file with your specific Firebase Web App configuration. You can find these in the [Firebase Console](https://console.firebase.google.com/):
 1. **Project Settings** (Gear Icon) -> **General** tab.
-2. Scroll to **Your apps** -> Select your Web App (or create a new Web app if none exists).
+2. Scroll to **Your apps** -> Select your Web App.
 3. Select the **Config** radio button to see the keys.
 
 **Required Environment Variables in `.env`:**
@@ -21,17 +21,17 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 GOOGLE_GENAI_API_KEY=your_gemini_api_key
 ```
 
-### 2. Common NPM Messages (Safe to Ignore)
-When running `npm install`, you might see messages like:
-- **"80 packages are looking for funding"**: This is **NOT an error**. It is a standard notice from NPM informing you that some library maintainers accept donations. You can safely ignore this.
-- **"found 0 vulnerabilities"**: This confirms your environment is secure.
+### 2. Initializing the Database (First Run)
+Once you have logged in for the first time:
+1. Navigate to **Settings** in the sidebar (Admin view).
+2. Find the **Database Bootstrapper** card.
+3. Click **"Bootstrap Initial Data"** to create the required Firestore collections (Wards, etc.).
 
-### 3. Enable Authentication
-1. In Firebase Console, go to **Authentication**.
-2. Click **Get Started** and enable **Email/Password**.
+### 3. Demo Mode
+If you haven't set up Firebase yet, click **"Launch Demo Mode"** on the start screen. This uses mock data to showcase all features, including the AI Sentiment Analysis.
 
-### 4. Demo Mode
-If you want to test the UI without setting up Firebase first, click **"Launch Demo Mode"** on the start screen. This uses mock data to showcase all features including the AI Sentiment Analysis.
+### 4. Common NPM Messages (Safe to Ignore)
+- **"80 packages are looking for funding"**: This is standard NPM output informing you that library maintainers accept donations. It is **NOT** an error.
 
 ---
 *Created by TRS Group Development Team*

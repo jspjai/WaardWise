@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { db } from "@/lib/firebase";
+import { doc, setDoc, writeBatch } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
   Shield, 
@@ -14,11 +18,61 @@ import {
   Lock,
   UserCheck,
   Zap,
-  Save
+  Save,
+  Loader2,
+  DatabaseZap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminSettings() {
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
+  const { toast } = useToast();
+
+  const handleBootstrap = async () => {
+    if (!db) {
+      toast({
+        title: "Firebase Error",
+        description: "Firestore is not initialized. Check your .env file.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBootstrapping(true);
+    try {
+      const batch = writeBatch(db);
+
+      // Create initial Wards
+      const wards = [
+        { id: "ward-80", name: "Indiranagar", district: "Bengaluru Central", booths: 24, surveyCount: 0 },
+        { id: "ward-81", name: "Malleshwaram", district: "Bengaluru North", booths: 18, surveyCount: 0 },
+      ];
+
+      wards.forEach(ward => {
+        batch.set(doc(db, "wards", ward.id), ward);
+      });
+
+      // We don't create users here because they must be created via Auth first,
+      // but we can prep the Firestore documents for the known emails.
+      // The Login form handles the Firestore profile creation on first sign-up.
+
+      await batch.commit();
+      
+      toast({
+        title: "System Bootstrapped",
+        description: "Initial wards and schema have been created in your live database.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Bootstrap Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsBootstrapping(false);
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div>
@@ -39,7 +93,7 @@ export function AdminSettings() {
             <button
               key={item.id}
               className={cn(
-                "w-full flex items-center justify-between p-4 rounded-2xl transition-all font-bold text-sm",
+                "w-full flex items-center justify-between p-4 rounded-2xl transition-all font-bold text-sm text-left",
                 i === 0 ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:bg-slate-50"
               )}
             >
@@ -85,26 +139,41 @@ export function AdminSettings() {
                     </div>
                     <Switch defaultChecked />
                  </div>
-                 <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-50 bg-slate-50/20">
-                    <div className="space-y-1">
-                      <p className="text-sm font-bold text-slate-900">High Visibility Dashboard</p>
-                      <p className="text-xs text-slate-400">Enable high-contrast charts for outdoor field tablets.</p>
-                    </div>
-                    <Switch />
-                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-sm bg-slate-900 text-white rounded-3xl overflow-hidden">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-lg font-headline font-bold flex items-center gap-2">
+                <DatabaseZap className="w-5 h-5 text-amber-400" />
+                Database Bootstrapper
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <p className="text-sm text-slate-400 leading-relaxed">
+                If this is a new Firebase project, use this tool to initialize the mandatory Firestore collections with sample Wards and schema.
+              </p>
+              <Button 
+                onClick={handleBootstrap}
+                disabled={isBootstrapping}
+                className="w-full h-12 bg-white text-slate-900 hover:bg-slate-100 font-bold rounded-xl gap-2 transition-all"
+              >
+                {isBootstrapping ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 text-amber-500" />
+                )}
+                {isBootstrapping ? "Initializing..." : "Bootstrap Initial Data"}
+              </Button>
             </CardContent>
           </Card>
 
           <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
             <CardHeader className="border-b border-slate-50 p-6">
-              <CardTitle className="text-lg font-headline font-bold">Quick Actions</CardTitle>
+              <CardTitle className="text-lg font-headline font-bold">System Actions</CardTitle>
             </CardHeader>
             <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
-                  <Zap className="w-5 h-5 mr-3 text-amber-500" />
-                  Flush Cache
-               </Button>
                <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
                   <Lock className="w-5 h-5 mr-3 text-primary" />
                   Audit Logs
@@ -113,9 +182,9 @@ export function AdminSettings() {
                   <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
                   Manage Admins
                </Button>
-               <Button className="h-16 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01]">
+               <Button className="col-span-1 sm:col-span-2 h-16 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01]">
                   <Save className="w-5 h-5 mr-3" />
-                  Save Changes
+                  Save Global Configuration
                </Button>
             </CardContent>
           </Card>
