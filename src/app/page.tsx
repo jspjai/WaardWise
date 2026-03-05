@@ -18,7 +18,7 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle, Play, Settings2, KeyRound } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Play, Settings2, KeyRound, Info } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ export default function Home() {
   if (!isConfigValid && !demoMode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <div className="max-w-xl w-full space-y-6">
+        <div className="max-w-2xl w-full space-y-6">
           <div className="text-center space-y-2 mb-8">
             <div className="mx-auto w-16 h-16 bg-primary rounded-3xl flex items-center justify-center text-white shadow-xl shadow-primary/20 mb-4">
               <ShieldCheck className="w-10 h-10" />
@@ -97,18 +97,27 @@ export default function Home() {
 
           <Alert className="bg-white border-blue-100 shadow-xl rounded-3xl p-8 border-l-4 border-l-primary">
             <KeyRound className="h-6 w-6 text-primary" />
-            <AlertTitle className="font-headline font-bold text-slate-900 text-lg ml-2">Configuration Required</AlertTitle>
+            <AlertTitle className="font-headline font-bold text-slate-900 text-lg ml-2">Firebase Configuration Required</AlertTitle>
             <AlertDescription className="mt-4 text-slate-600 text-sm leading-relaxed">
-              We detected missing environment variables. To enable live data and authentication, please update your <code className="bg-slate-100 px-1.5 py-0.5 rounded text-primary font-bold">.env</code> file.
+              We detected placeholder or missing variables. To enable real-time data sync and secure login, please update your <code className="bg-slate-100 px-1.5 py-0.5 rounded text-primary font-bold">.env</code> file with keys from your Firebase Console.
               
-              <div className="mt-6 space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Missing Variables:</p>
-                <div className="flex flex-wrap gap-2">
-                  {missing.map(key => (
-                    <Badge key={key} variant="outline" className="bg-red-50 text-red-600 border-red-100 font-mono text-[10px]">
-                      {key}
-                    </Badge>
-                  ))}
+              <div className="mt-6 space-y-4">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Missing/Placeholder Variables:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {missing.map(key => (
+                      <Badge key={key} variant="outline" className="bg-red-50 text-red-600 border-red-100 font-mono text-[10px]">
+                        {key}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex gap-3 items-start">
+                  <Info className="w-4 h-4 text-blue-500 mt-0.5" />
+                  <p className="text-[11px] text-blue-700 leading-relaxed">
+                    <strong>Note:</strong> Messages about "packages looking for funding" during installation are normal informational notices and can be safely ignored.
+                  </p>
                 </div>
               </div>
             </AlertDescription>
@@ -121,7 +130,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Setup Guide</p>
-                <p className="text-sm text-slate-600 mt-1">Check the <span className="font-bold">README.md</span> for instructions on where to find these keys.</p>
+                <p className="text-sm text-slate-600 mt-1">Copy credentials from <strong>Project Settings</strong> in Firebase to your environment file.</p>
               </div>
             </div>
             

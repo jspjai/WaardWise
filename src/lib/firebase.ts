@@ -11,10 +11,6 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | undefined;
-let db: Firestore | undefined;
-let auth: Auth | undefined;
-
 // Enhanced validation to help user identify missing or invalid keys
 const getConfigurationDiagnostics = () => {
   const keys = [
@@ -25,7 +21,10 @@ const getConfigurationDiagnostics = () => {
     { name: "NEXT_PUBLIC_FIREBASE_APP_ID", value: firebaseConfig.appId },
   ];
   
-  const missing = keys.filter(k => !k.value || k.value.trim() === "" || k.value.includes("your-")).map(k => k.name);
+  const missing = keys
+    .filter(k => !k.value || k.value.trim() === "" || k.value.includes("your-") || k.value.includes("your_"))
+    .map(k => k.name);
+
   return {
     isValid: missing.length === 0,
     missing
@@ -33,6 +32,10 @@ const getConfigurationDiagnostics = () => {
 };
 
 const { isValid: isConfigValid, missing } = getConfigurationDiagnostics();
+
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+let auth: Auth | undefined;
 
 if (typeof window !== "undefined") {
   if (isConfigValid) {
