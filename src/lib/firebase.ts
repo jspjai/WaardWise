@@ -15,12 +15,18 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-// Strict validation for prototype and production
-const isConfigValid = 
-  !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-  process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "your_api_key" &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID.includes("your_project_id");
+// Enhanced validation to help user identify missing keys
+const getMissingKeys = () => {
+  const keys = [
+    { name: "NEXT_PUBLIC_FIREBASE_API_KEY", value: process.env.NEXT_PUBLIC_FIREBASE_API_KEY },
+    { name: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", value: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN },
+    { name: "NEXT_PUBLIC_FIREBASE_PROJECT_ID", value: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID },
+  ];
+  return keys.filter(k => !k.value || k.value.includes("your_")).map(k => k.name);
+};
+
+const missing = getMissingKeys();
+const isConfigValid = missing.length === 0;
 
 if (typeof window !== "undefined") {
   if (isConfigValid) {
@@ -28,12 +34,12 @@ if (typeof window !== "undefined") {
       app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       db = getFirestore(app);
       auth = getAuth(app);
-      console.log("Firebase initialized successfully with Project ID:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+      console.log("✅ Firebase initialized successfully:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
     } catch (error) {
-      console.error("Firebase initialization failed:", error);
+      console.error("❌ Firebase initialization failed:", error);
     }
   } else {
-    console.warn("Firebase configuration is missing or using placeholder values. Please check your .env file.");
+    console.warn("⚠️ Firebase configuration incomplete. Missing keys:", missing.join(", "));
   }
 }
 
