@@ -1,0 +1,477 @@
+{
+  "entities": {
+    "Ward": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ward",
+      "type": "object",
+      "description": "Represents a political ward, which is a key geographical and administrative unit for data collection and reporting.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Ward entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name of the ward."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the ward."
+        },
+        "price": {
+          "type": "number",
+          "description": "The cost in local currency for candidates to purchase the aggregated survey data for this ward."
+        },
+        "isAvailableForPurchase": {
+          "type": "boolean",
+          "description": "Indicates whether the aggregated data for this ward is currently available for candidates to purchase."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the ward record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the ward record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "price",
+        "isAvailableForPurchase",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Booth": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Booth",
+      "type": "object",
+      "description": "Represents a polling booth or station within a ward, which serves as a micro-level area for survey data collection.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Booth entity."
+        },
+        "wardId": {
+          "type": "string",
+          "description": "Reference to Ward. (Relationship: Ward 1:N Booth)"
+        },
+        "boothNumber": {
+          "type": "string",
+          "description": "The unique number or identifier for the polling booth."
+        },
+        "pollingStationName": {
+          "type": "string",
+          "description": "The name of the polling station associated with this booth."
+        },
+        "areaStreetCovered": {
+          "type": "string",
+          "description": "A description of the specific area or streets covered by this booth's survey efforts."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the booth record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the booth record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "wardId",
+        "boothNumber",
+        "pollingStationName",
+        "areaStreetCovered",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Surveyor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Surveyor",
+      "type": "object",
+      "description": "Represents a field surveyor responsible for collecting political survey data door-to-door.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Surveyor entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the field surveyor."
+        },
+        "email": {
+          "type": "string",
+          "description": "The contact email address of the surveyor. Used for identification, not authentication.",
+          "format": "email"
+        },
+        "assignedWardIds": {
+          "type": "array",
+          "description": "References to Wards that this surveyor is assigned to for data collection. (Relationship: Surveyor N:N Ward)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates whether the surveyor's account is currently active."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the surveyor record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the surveyor record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "assignedWardIds",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Candidate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Candidate",
+      "type": "object",
+      "description": "Represents a political candidate or client who purchases ward-wise survey data reports.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Candidate entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the political candidate or client."
+        },
+        "email": {
+          "type": "string",
+          "description": "The contact email address of the candidate. Used for identification, not authentication.",
+          "format": "email"
+        },
+        "purchasedWardIds": {
+          "type": "array",
+          "description": "References to Wards for which the candidate has purchased and unlocked data reports. (Relationship: Candidate N:N Ward)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the candidate record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the candidate record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "purchasedWardIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Survey": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Survey",
+      "type": "object",
+      "description": "Represents a single completed political survey form collected from a household.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Survey entity."
+        },
+        "surveyorId": {
+          "type": "string",
+          "description": "Reference to the Surveyor who conducted this survey. (Relationship: Surveyor 1:N Survey)"
+        },
+        "wardId": {
+          "type": "string",
+          "description": "Reference to the Ward where this survey was conducted. (Relationship: Ward 1:N Survey)"
+        },
+        "boothId": {
+          "type": "string",
+          "description": "Reference to the Booth where this survey was conducted. (Relationship: Booth 1:N Survey)"
+        },
+        "surveyDate": {
+          "type": "string",
+          "description": "The date on which the survey was conducted.",
+          "format": "date-time"
+        },
+        "submissionTimestamp": {
+          "type": "string",
+          "description": "The timestamp when this survey data was submitted to the system.",
+          "format": "date-time"
+        },
+        "houseNumberLandmark": {
+          "type": "string",
+          "description": "House number or a nearby landmark to identify the household."
+        },
+        "respondentName": {
+          "type": "string",
+          "description": "Optional: Name of the respondent from the household."
+        },
+        "respondentMobile": {
+          "type": "string",
+          "description": "Optional: Mobile number of the respondent."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender of the respondent. Allowed values: 'Male', 'Female', 'Other'."
+        },
+        "ageGroup": {
+          "type": "string",
+          "description": "Age group of the respondent. Allowed values: '18–25', '26–40', '41–60', '60+'."
+        },
+        "residenceType": {
+          "type": "string",
+          "description": "Type of residence for the household. Allowed values: 'Own house', 'Rented', 'Apartment', 'Informal settlement'."
+        },
+        "yearsLivingInArea": {
+          "type": "string",
+          "description": "Duration the respondent has been living in the current area. Allowed values: '<2', '2–5', '5–10', '10+'."
+        },
+        "languageSpokenAtHome": {
+          "type": "string",
+          "description": "Primary language spoken at home by the respondent. Allowed values: 'Kannada', 'Tamil', 'Telugu', 'Hindi', 'Other'."
+        },
+        "communityGroup": {
+          "type": "string",
+          "description": "Optional: Community group affiliation of the respondent. Allowed values: 'SC', 'ST', 'OBC', 'General', 'Prefer not to say'."
+        },
+        "socialNetworkAffiliations": {
+          "type": "array",
+          "description": "Multi-select: Social network affiliations of the respondent. Allowed values: 'RWA member', 'SHG member', 'Religious association', 'Youth group', 'None'.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "householdMaleVoterCount": {
+          "type": "number",
+          "description": "Number of male voters residing in the household."
+        },
+        "householdFemaleVoterCount": {
+          "type": "number",
+          "description": "Number of female voters residing in the household."
+        },
+        "householdYouthVoterCount": {
+          "type": "number",
+          "description": "Number of youth voters (aged 18-25) residing in the household."
+        },
+        "votingBehavior": {
+          "type": "string",
+          "description": "General voting behavior pattern observed in the household. Allowed values: 'Always vote', 'Sometimes vote', 'Rarely vote'."
+        },
+        "waterSupplySeverity": {
+          "type": "string",
+          "description": "Perceived severity of water supply issues. Allowed values: 'Low', 'Medium', 'High'."
+        },
+        "roadsSeverity": {
+          "type": "string",
+          "description": "Perceived severity of road conditions. Allowed values: 'Low', 'Medium', 'High'."
+        },
+        "drainageSeverity": {
+          "type": "string",
+          "description": "Perceived severity of drainage issues. Allowed values: 'Low', 'Medium', 'High'."
+        },
+        "garbageSeverity": {
+          "type": "string",
+          "description": "Perceived severity of garbage management issues. Allowed values: 'Low', 'Medium', 'High'."
+        },
+        "safetySeverity": {
+          "type": "string",
+          "description": "Perceived severity of safety issues. Allowed values: 'Low', 'Medium', 'High'."
+        },
+        "top1LocalIssue": {
+          "type": "string",
+          "description": "Free text field for the respondent to state the single most important local issue."
+        },
+        "wardDevelopmentSatisfaction": {
+          "type": "string",
+          "description": "Respondent's satisfaction level with ward development. Allowed values: 'Satisfied', 'Neutral', 'Dissatisfied'."
+        },
+        "leaderAccessibility": {
+          "type": "string",
+          "description": "Perception of how easily local leaders can be reached. Allowed values: 'Easily reachable', 'Sometimes reachable', 'Not reachable'."
+        },
+        "leadershipQualities": {
+          "type": "array",
+          "description": "Multi-select (top 2): Desired qualities in a leader. Allowed values: 'Honest', 'Accessible', 'Strong problem solver', 'Welfare oriented', 'Educated', 'Community representative'.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "womenSafetyPerception": {
+          "type": "string",
+          "description": "Perception of safety for women in the area. Allowed values: 'Safe', 'Moderate', 'Unsafe'."
+        },
+        "mainWomenIssue": {
+          "type": "string",
+          "description": "The main issue predominantly affecting women in the area. Allowed values: 'Safety', 'Water', 'Health', 'Employment', 'Education'."
+        },
+        "householdVoterMood": {
+          "type": "string",
+          "description": "Overall political sentiment or mood of voters in the household. Allowed values: 'Pro-change', 'Neutral', 'Pro-continuity'."
+        },
+        "visibleSocioEconomicStatus": {
+          "type": "string",
+          "description": "Surveyor's observational assessment of the household's visible socio-economic status. Allowed values: 'Low', 'Middle', 'High'."
+        },
+        "keyLocalInfluenceFactor": {
+          "type": "string",
+          "description": "Surveyor's observation of key local factors influencing the community. Allowed values: 'Community leader', 'Apartment association', 'Religious institution', 'None'."
+        },
+        "observerNotes": {
+          "type": "string",
+          "description": "Free-text field for the surveyor's additional observations and notes about the survey or household."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the survey record was created in the database.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the survey record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "surveyorId",
+        "wardId",
+        "boothId",
+        "surveyDate",
+        "submissionTimestamp",
+        "houseNumberLandmark",
+        "gender",
+        "ageGroup",
+        "residenceType",
+        "yearsLivingInArea",
+        "languageSpokenAtHome",
+        "socialNetworkAffiliations",
+        "householdMaleVoterCount",
+        "householdFemaleVoterCount",
+        "householdYouthVoterCount",
+        "votingBehavior",
+        "waterSupplySeverity",
+        "roadsSeverity",
+        "drainageSeverity",
+        "garbageSeverity",
+        "safetySeverity",
+        "top1LocalIssue",
+        "wardDevelopmentSatisfaction",
+        "leaderAccessibility",
+        "leadershipQualities",
+        "womenSafetyPerception",
+        "mainWomenIssue",
+        "householdVoterMood",
+        "visibleSocioEconomicStatus",
+        "keyLocalInfluenceFactor",
+        "observerNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/AdminRole"
+          },
+          "description": "Stores Super Admin roles. The existence of a document at this path signifies a user is a Super Admin, enabling role-based access control without custom claims."
+        }
+      },
+      {
+        "path": "/wards/{wardId}",
+        "definition": {
+          "entityName": "Ward",
+          "schema": {
+            "$ref": "#/backend/entities/Ward"
+          },
+          "description": "Master list of political wards. Managed by Super Admins. Visible to Candidates (price, availability) and Surveyors (assigned wards). Includes 'isAvailableForPurchase' for direct query and rule evaluation (QAP)."
+        }
+      },
+      {
+        "path": "/wards/{wardId}/booths/{boothId}",
+        "definition": {
+          "entityName": "Booth",
+          "schema": {
+            "$ref": "#/backend/entities/Booth"
+          },
+          "description": "Represents polling booths within a specific ward. Managed by Super Admins. Booths are a micro-level unit for survey data collection. Includes denormalized 'wardId' for authorization independence.",
+          "params": [
+            {
+              "name": "wardId",
+              "description": "The unique identifier of the parent ward."
+            },
+            {
+              "name": "boothId",
+              "description": "The unique identifier for the polling booth."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/surveyors/{surveyorId}",
+        "definition": {
+          "entityName": "Surveyor",
+          "schema": {
+            "$ref": "#/backend/entities/Surveyor"
+          },
+          "description": "Profile information for field surveyors. The document ID matches the user's Firebase Authentication UID. Includes denormalized 'assignedWardIds' for authorization independence regarding survey creation and access checks."
+        }
+      },
+      {
+        "path": "/candidates/{candidateId}",
+        "definition": {
+          "entityName": "Candidate",
+          "schema": {
+            "$ref": "#/backend/entities/Candidate"
+          },
+          "description": "Profile information for political candidates/clients. The document ID matches the user's Firebase Authentication UID. Includes denormalized 'purchasedWardIds' for authorization independence regarding data access."
+        }
+      },
+      {
+        "path": "/surveys/{surveyId}",
+        "definition": {
+          "entityName": "Survey",
+          "schema": {
+            "$ref": "#/backend/entities/Survey"
+          },
+          "description": "Individual completed political survey forms. Created by assigned surveyors. Contains denormalized 'wardId', 'boothId', and 'surveyorId' for authorization independence and direct access checks. Super Admins can read all. Candidates access aggregated data via backend, not individual surveys."
+        }
+      }
+    ],
+    "reasoning": "The provided server logs indicate that the Next.js app server started successfully without any apparent errors. It reported 'Preview running' and 'Ready in 4.3s', suggesting the initial startup process is working as expected. If issues persist, they are likely external to the server's startup routine, perhaps related to connectivity, environment variables, or application-level logic after startup. Regarding the Firestore structure, the design prioritizes security, scalability, and debuggability following the core principles.\n\n**Authorization Independence:**\n1.  **User Profiles (Surveyor, Candidate):** The `Surveyor` and `Candidate` documents are stored in top-level collections (`/surveyors/{surveyorId}` and `/candidates/{candidateId}`) where the document ID directly matches the user's Firebase Authentication UID. This makes `request.auth.uid` a direct path component for accessing one's own profile. Critical authorization data, such as `assignedWardIds` for Surveyors and `purchasedWardIds` for Candidates, is denormalized directly into these user profile documents. This eliminates the need for `get()` calls to other user profiles in security rules, ensuring atomic operations and simplified authorization logic. For example, a rule can check `request.resource.data.wardId in get(/surveyors/$(request.auth.uid)).data.assignedWardIds` with a single, self-referential `get()` operation.\n2.  **Survey Data:** Each `Survey` document (`/surveys/{surveyId}`) explicitly contains `wardId`, `boothId`, and `surveyorId`. This denormalization allows security rules to evaluate access based solely on the document's own fields and the `request.auth.uid` (and potentially a single `get()` to the user's own profile), avoiding complex hierarchical `get()` calls to parent `Ward` or `Booth` documents for every survey operation. This is crucial for enabling robust and performant rules.\n3.  **Booth Data:** Each `Booth` document (`/wards/{wardId}/booths/{boothId}`) includes the `wardId` as a direct field, further promoting authorization independence for its own access checks if needed, without relying on the parent `Ward` document's data.\n\n**Queryable Access Patterns (QAPs):**\n1.  **Super Admin:** The `/roles_admin/{userId}` collection uses 'existence over content' for role checking. Super Admins can perform direct `list` operations across all top-level collections (`/wards`, `/surveyors`, `/candidates`, `/surveys`) due to their global administrative privilege, which can be easily verified by checking for their UID's existence in `/roles_admin`.\n2.  **Field Surveyor:**\n    *   Surveyors can list `wards` to see general information like `isAvailableForPurchase` and `price`. Access to specific ward details (e.g., booths, survey creation) is governed by their `assignedWardIds` field in their own `/surveyors/{surveyorId}` document. Rules can enforce that surveys are only created for wards present in this list.\n    *   They can efficiently query for surveys they have personally submitted using `db.collection('surveys').where('surveyorId', '==', request.auth.uid)`, satisfying the QAP for personal data.\n3.  **Candidate:**\n    *   Candidates can list all `wards` to browse available options, filtering by `isAvailableForPurchase` client-side or with simple `where` clauses. They can access details of wards they have purchased by leveraging the `purchasedWardIds` in their `/candidates/{candidateId}` document. Rules can enforce this by checking `request.auth.uid` against `get(/candidates/$(request.auth.uid)).data.purchasedWardIds` when accessing specific ward data.\n    *   Crucially, Candidates are **explicitly denied read access to individual `/surveys/{surveyId}` documents**. This structural segregation enforces that they can only access aggregated data for purchased wards, which would be provided by a backend service (e.g., Cloud Function) that generates reports, or stored in a separate, aggregated data collection. This prevents direct exposure of raw survey responses and simplifies security rules for survey documents.\n\n**Structural Segregation:**\n*   Each collection (e.g., `/wards`, `/surveyors`, `/candidates`, `/surveys`) maintains a homogeneous security posture. For example, all documents in `/wards` are managed by Super Admins but can be viewed by others with specific conditions. All documents in `/surveys` are created by Surveyors and read by Admins, but not by Candidates. This avoids mixing data with different access requirements within the same collection, making security rules simpler and more explicit. Path-based ownership is used for user-specific data (Surveyor/Candidate profiles) and hierarchical organization is used for geographical units (Wards/Booths). Global roles are managed via a dedicated `roles_admin` collection (existence over content)."
+  }
+}

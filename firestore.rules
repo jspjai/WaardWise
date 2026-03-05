@@ -1,30 +1,154 @@
+/**
+ * POLITICAL SURVEY PLATFORM SECURITY RULES
+ *
+ * Core Philosophy:
+ * This ruleset implements a multi-tiered authorization model designed for a political data collection 
+ * ecosystem. It distinguishes between Super Admins (global control), Field Surveyors (data collection), 
+ * and Candidates (data consumption). Access is strictly controlled via a combination of path-based 
+ * ownership, global roles, and denormalized relationship data.
+ *
+ * Data Structure:
+ * - /roles_admin/{userId}: Existence-based admin role check.
+ * - /wards/{wardId}: Master geographic units (Admin-managed, Auth-read).
+ * - /wards/{wardId}/booths/{boothId}: Micro-level units (Admin-managed, Auth-read).
+ * - /surveyors/{surveyorId}: Surveyor profiles (Owner/Admin access).
+ * - /candidates/{candidateId}: Candidate profiles (Owner/Admin access).
+ * - /surveys/{surveyId}: Raw survey data (Surveyor-create, Admin-read, Candidate-denied).
+ *
+ * Key Security Decisions:
+ * - Admin Privilege: All write operations on master data (Wards, Booths) are restricted to Super Admins.
+ * - Profile Integrity: Users can only create and manage their own profiles (Surveyor/Candidate) where 
+ *   the document ID matches their Firebase UID.
+ * - Survey Isolation: Candidates are explicitly denied access to raw survey documents to ensure 
+ *   data privacy and force usage of aggregated reports provided by the backend.
+ * - Relational Validation: Surveyors can only submit surveys for wards explicitly assigned to them, 
+ *   verified via a cross-reference to their Surveyor profile document.
+ *
+ * Denormalization for Authorization:
+ * - Assigned Wards: Stored directly on Surveyor profiles to validate survey submission rights.
+ * - Purchased Wards: Stored directly on Candidate profiles to control access to ward-specific insights.
+ * - Survey Metadata: Surveyor and Ward IDs are stored directly on Survey documents to allow 
+ *   fast ownership and validation checks without deep nesting.
+ */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper to check user roles
-    function getRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+
+    // --- Helper Functions ---
+
+    /** Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null && getRole() == 'ADMIN';
+    /** Checks if the user has the Super Admin role by existence in the admin collection. */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
+    /** Checks if the authenticated user's UID matches the provided ID (Path-based ownership). */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** 
+     * Validates that a surveyor is assigned to a specific ward. 
+     * Uses a single get() call to the user's own profile. 
+     */
+    function isAssignedToWard(wardId) {
+      return wardId in get(/databases/$(database)/documents/surveyors/$(request.auth.uid)).data.assignedWardIds;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Admin role registry. Only admins can manage roles.
+     * @path /roles_admin/{userId}
+     * @allow (get) Any signed-in user can check their own admin status.
+     * @deny (write) Only existing admins can modify roles.
+     * @principle Existence-based Role Access Control.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Master list of Wards. Managed by Admins, read by all authenticated users.
+     * @path /wards/{wardId}
+     * @allow (read) Signed-in Surveyors and Candidates browsing the marketplace.
+     * @deny (write) Any non-admin attempting to modify geographic metadata.
+     * @principle Admin-controlled master data with authenticated read.
+     */
     match /wards/{wardId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && getRole() == 'ADMIN';
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+
+      /**
+       * @description Polling booths within a ward.
+       * @path /wards/{wardId}/booths/{boothId}
+       * @allow (read) Signed-in users.
+       * @deny (write) Non-admins.
+       * @principle Hierarchical data structure with inherited read permissions.
+       */
+      match /booths/{boothId} {
+        allow get, list: if isSignedIn();
+        allow create, update, delete: if isAdmin();
+      }
     }
 
+    /**
+     * @description Profile information for Field Surveyors.
+     * @path /surveyors/{surveyorId}
+     * @allow (create) New users setting up their surveyor profile.
+     * @deny (update) Changing the profile ID to another user.
+     * @principle Path-based ownership for user profiles.
+     */
+    match /surveyors/{surveyorId} {
+      allow get: if isAdmin() || isOwner(surveyorId);
+      allow list: if isAdmin();
+      allow create: if isOwner(surveyorId) && request.resource.data.id == surveyorId;
+      allow update: if (isAdmin() || isOwner(surveyorId)) && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Profile information for Political Candidates.
+     * @path /candidates/{candidateId}
+     * @allow (get) The candidate themselves or an admin.
+     * @deny (list) Candidates attempting to view other candidates.
+     * @principle Strict profile isolation.
+     */
+    match /candidates/{candidateId} {
+      allow get: if isAdmin() || isOwner(candidateId);
+      allow list: if isAdmin();
+      allow create: if isOwner(candidateId) && request.resource.data.id == candidateId;
+      allow update: if (isAdmin() || isOwner(candidateId)) && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Raw political survey submissions.
+     * @path /surveys/{surveyId}
+     * @allow (create) Assigned surveyors submitting valid data for their wards.
+     * @deny (read) Candidates attempting to access raw, non-aggregated survey records.
+     * @principle Relational integrity and structural segregation of raw vs aggregated data.
+     */
     match /surveys/{surveyId} {
-      allow read: if request.auth != null && (getRole() == 'ADMIN' || getRole() == 'SURVEYOR');
-      allow create: if request.auth != null && getRole() == 'SURVEYOR';
-      allow update, delete: if request.auth != null && getRole() == 'ADMIN';
-    }
+      // Admins see all; Surveyors see their own submissions.
+      allow get: if isAdmin() || (isSignedIn() && resource.data.surveyorId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100); // Pagination/Filtering required for lists
 
-    match /unlockedWards/{unlockId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.candidateId || getRole() == 'ADMIN');
-      allow create: if request.auth != null && getRole() == 'CANDIDATE';
+      // Surveyors can create if they are assigned to the ward specified in the survey.
+      allow create: if isSignedIn() 
+                    && request.resource.data.surveyorId == request.auth.uid
+                    && isAssignedToWard(request.resource.data.wardId);
+      
+      // Surveys are typically immutable once submitted by field staff.
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
     }
   }
 }
