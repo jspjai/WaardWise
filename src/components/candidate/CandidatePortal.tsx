@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState } from "react";
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,12 @@ import {
 import { Ward } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { WardAnalysis } from "./WardAnalysis";
-import { useDoc } from "@/firebase";
+
+const MOCK_WARDS: Ward[] = [
+  { id: "ward-80", name: "Indiranagar", district: "Bengaluru Central", surveyCount: 1240 },
+  { id: "ward-81", name: "Malleshwaram", district: "Bengaluru North", surveyCount: 890 },
+  { id: "ward-82", name: "Koramangala", district: "Bengaluru South", surveyCount: 2100 },
+];
 
 export function CandidatePortal() {
   const db = useFirestore();
@@ -28,12 +32,16 @@ export function CandidatePortal() {
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
 
   const wardsQuery = useMemoFirebase(() => collection(db, "wards"), [db]);
-  const { data: wards, isLoading } = useCollection<Ward>(wardsQuery);
+  const { data: firestoreWards, isLoading } = useCollection<Ward>(wardsQuery);
 
   const candidateRef = useMemoFirebase(() => user ? doc(db, "candidates", user.uid) : null, [db, user]);
   const { data: candidateProfile } = useDoc(candidateRef);
 
+  const isDemo = user?.isAnonymous;
+  const wards = (firestoreWards && firestoreWards.length > 0) ? firestoreWards : (isDemo ? MOCK_WARDS : []);
+
   const isUnlocked = (wardId: string) => {
+    if (isDemo) return wardId === "ward-80"; // Default unlock for demo
     return candidateProfile?.purchasedWardIds?.includes(wardId) || false;
   };
 
@@ -66,7 +74,7 @@ export function CandidatePortal() {
         <p className="text-sm text-slate-500 mt-1">Unlock high-quality survey data for your target wards.</p>
       </div>
 
-      {isLoading ? (
+      {isLoading && !isDemo ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>

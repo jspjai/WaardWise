@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
@@ -28,6 +27,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+const MOCK_SUBMISSIONS = [
+  { id: "sub-1", respondentName: "Kumar S.", boothNumber: "142", surveyDate: new Date().toISOString(), householdVoterMood: "Pro-change" },
+  { id: "sub-2", respondentName: "Lakshmi Rao", boothNumber: "142", surveyDate: new Date(Date.now() - 86400000).toISOString(), householdVoterMood: "Neutral" },
+  { id: "sub-3", respondentName: "Anil K.", boothNumber: "145", surveyDate: new Date(Date.now() - 172800000).toISOString(), householdVoterMood: "Pro-continuity" },
+];
+
 export function SurveyorSubmissions() {
   const { user } = useUser();
   const db = useFirestore();
@@ -37,7 +42,10 @@ export function SurveyorSubmissions() {
     return query(collection(db, "surveys"), where("surveyorId", "==", user.uid));
   }, [db, user]);
 
-  const { data: submissions, isLoading } = useCollection(submissionsQuery);
+  const { data: firestoreSubmissions, isLoading } = useCollection(submissionsQuery);
+
+  const isDemo = user?.isAnonymous;
+  const submissions = (firestoreSubmissions && firestoreSubmissions.length > 0) ? firestoreSubmissions : (isDemo ? MOCK_SUBMISSIONS : []);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -57,7 +65,7 @@ export function SurveyorSubmissions() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && !isDemo ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
@@ -65,7 +73,7 @@ export function SurveyorSubmissions() {
         <>
           {/* Mobile Card View */}
           <div className="grid grid-cols-1 md:hidden gap-4">
-            {submissions?.map((sub) => (
+            {submissions?.map((sub: any) => (
               <Card key={sub.id} className="border-none shadow-sm bg-white overflow-hidden">
                 <CardContent className="p-5">
                   <div className="flex justify-between items-start mb-4">
@@ -121,7 +129,7 @@ export function SurveyorSubmissions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {submissions?.map((sub) => (
+                {submissions?.map((sub: any) => (
                   <TableRow key={sub.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
                     <TableCell className="font-bold text-slate-500 text-xs">{sub.id.slice(0, 8)}</TableCell>
                     <TableCell className="font-bold text-slate-900">{sub.respondentName || "Household"}</TableCell>
@@ -152,6 +160,11 @@ export function SurveyorSubmissions() {
                 ))}
               </TableBody>
             </Table>
+            {(!submissions || submissions.length === 0) && (
+              <div className="py-12 text-center">
+                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No submissions yet</p>
+              </div>
+            )}
           </Card>
         </>
       )}

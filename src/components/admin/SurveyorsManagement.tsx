@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +19,21 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const MOCK_SURVEYORS = [
+  { id: "s-1", name: "Rahul Sharma", email: "rahul@trs.pro", isActive: true, assignedWardIds: ["ward-80", "ward-81"] },
+  { id: "s-2", name: "Priya V", email: "priya@trs.pro", isActive: true, assignedWardIds: ["ward-80"] },
+  { id: "s-3", name: "Amit Singh", email: "amit@trs.pro", isActive: false, assignedWardIds: ["ward-82"] },
+  { id: "s-4", name: "Sneha Kapur", email: "sneha@trs.pro", isActive: true, assignedWardIds: ["ward-81", "ward-83"] },
+];
+
 export function SurveyorsManagement() {
   const db = useFirestore();
+  const { user } = useUser();
   const surveyorsQuery = useMemoFirebase(() => collection(db, "surveyors"), [db]);
-  const { data: surveyors, isLoading } = useCollection(surveyorsQuery);
+  const { data: firestoreSurveyors, isLoading } = useCollection(surveyorsQuery);
+
+  const isDemo = user?.isAnonymous;
+  const surveyors = (firestoreSurveyors && firestoreSurveyors.length > 0) ? firestoreSurveyors : (isDemo ? MOCK_SURVEYORS : []);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -69,7 +79,7 @@ export function SurveyorsManagement() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isLoading && !isDemo ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
@@ -124,6 +134,11 @@ export function SurveyorsManagement() {
               </CardContent>
             </Card>
           ))}
+          {(!surveyors || surveyors.length === 0) && !isLoading && (
+            <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No surveyors found</p>
+            </div>
+          )}
         </div>
       )}
     </div>
