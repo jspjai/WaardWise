@@ -15,21 +15,20 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-// Validation: We need at least the API Key and Project ID to initialize
+// Strict validation: Check if keys are actually provided and not placeholders
 const isConfigValid = 
   !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
   process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "your_api_key_here" &&
-  !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== "your_project_id";
 
-if (typeof window !== "undefined") {
-  if (isConfigValid) {
-    try {
-      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-      db = getFirestore(app);
-      auth = getAuth(app);
-    } catch (error) {
-      console.error("Firebase initialization failed. Check your credentials in .env", error);
-    }
+if (typeof window !== "undefined" && isConfigValid) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
   }
 }
 
