@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, isConfigValid } from "@/lib/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, UserCheck, Users, Briefcase } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Role, User } from "@/lib/types";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -23,14 +24,16 @@ export function LoginForm() {
     setIsLoading(true);
     setError("");
 
-    try {
-      if (!auth || !db) {
-        throw new Error("Firebase not configured. Please use Quick Access buttons below.");
-      }
+    if (!isConfigValid || !auth) {
+      setError("Firebase is not configured. Please use 'Quick Access' buttons for local testing.");
+      setIsLoading(false);
+      return;
+    }
 
+    try {
       if (isSignUp) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", userCredential.user.uid), {
+        await setDoc(doc(db!, "users", userCredential.user.uid), {
           id: userCredential.user.uid,
           email: email,
           name: email.split('@')[0],
@@ -47,11 +50,24 @@ export function LoginForm() {
     }
   };
 
-  const handleQuickAccess = (email: string) => {
+  // Mock login for prototype testing when Firebase is not connected
+  const handleQuickAccess = (email: string, role: Role) => {
+    // In a real app, this would trigger sign-in.
+    // Since we're in prototype mode, we'll "pretend" login if keys are missing
+    // by triggering a custom event or relying on the parent to handle the user state.
+    // For this prototype, we'll set the inputs and let the user know they can use Demo Mode 
+    // or we can force a local "mock login" by using a window event or similar.
+    
+    // Better yet: we'll use a hack to update the parent Home component's state
+    // by calling a function passed via props if we had it, but since we don't,
+    // we'll just set the fields and show a message.
+    
     setEmail(email);
     setPassword("password123");
-    // In a real app, we'd trigger sign-in, but for this prototype 
-    // we assume the user will click 'Sign In' or use the demo buttons in page.tsx
+    
+    if (!isConfigValid) {
+      setError(`Firebase is unconfigured. Refresh and use 'Launch Demo Mode' on the start screen to test the ${role.toLowerCase()} interface.`);
+    }
   };
 
   return (
@@ -74,8 +90,8 @@ export function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <Alert variant="destructive" className="rounded-xl bg-red-50 border-red-100 text-red-600">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs font-bold uppercase tracking-tight ml-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <AlertDescription className="text-[11px] font-bold uppercase tracking-tight ml-2">
                   {error}
                 </AlertDescription>
               </Alert>
@@ -130,7 +146,7 @@ export function LoginForm() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => handleQuickAccess("admin@trsgroup.com")}
+                    onClick={() => handleQuickAccess("admin@trsgroup.com", "ADMIN")}
                     className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
                   >
                     <UserCheck className="w-4 h-4 text-primary" />
@@ -139,7 +155,7 @@ export function LoginForm() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => handleQuickAccess("rahul@trsgroup.com")}
+                    onClick={() => handleQuickAccess("rahul@trsgroup.com", "SURVEYOR")}
                     className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
                   >
                     <Users className="w-4 h-4 text-emerald-500" />
@@ -148,7 +164,7 @@ export function LoginForm() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => handleQuickAccess("vikram@trsgroup.com")}
+                    onClick={() => handleQuickAccess("vikram@trsgroup.com", "CANDIDATE")}
                     className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
                   >
                     <Briefcase className="w-4 h-4 text-amber-500" />

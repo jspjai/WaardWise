@@ -15,12 +15,14 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
+// Improved validation: Check if essential keys exist and aren't placeholders
 const isConfigValid = 
-  firebaseConfig.apiKey && 
+  !!firebaseConfig.apiKey && 
   firebaseConfig.apiKey !== "your-api-key" && 
-  firebaseConfig.apiKey.length > 10;
+  firebaseConfig.apiKey.length > 10 &&
+  !!firebaseConfig.projectId;
 
-if (isConfigValid) {
+if (typeof window !== "undefined" && isConfigValid) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
@@ -30,4 +32,4 @@ if (isConfigValid) {
   }
 }
 
-export { app, db, auth };
+export { app, db, auth, isConfigValid };
