@@ -15,20 +15,24 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-// Strict validation: Check if keys are actually provided and not placeholders
+// Validation: Ensure all required fields are present and not placeholders
 const isConfigValid = 
   !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && 
-  process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "your_api_key_here" &&
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY.length > 10 &&
   !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== "your_project_id";
+  !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID.includes("your_project_id");
 
-if (typeof window !== "undefined" && isConfigValid) {
-  try {
-    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
+if (typeof window !== "undefined") {
+  if (isConfigValid) {
+    try {
+      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+    } catch (error) {
+      console.error("Firebase initialization failed:", error);
+    }
+  } else {
+    console.warn("Firebase configuration is missing or invalid. Check your .env file.");
   }
 }
 
