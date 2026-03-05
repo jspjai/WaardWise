@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheck, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, UserCheck, Users, Briefcase } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LoginForm() {
@@ -24,9 +24,12 @@ export function LoginForm() {
     setError("");
 
     try {
+      if (!auth || !db) {
+        throw new Error("Firebase not configured. Please use Quick Access buttons below.");
+      }
+
       if (isSignUp) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // Initialize new user with default role (SURVEYOR)
         await setDoc(doc(db, "users", userCredential.user.uid), {
           id: userCredential.user.uid,
           email: email,
@@ -42,6 +45,13 @@ export function LoginForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickAccess = (email: string) => {
+    setEmail(email);
+    setPassword("password123");
+    // In a real app, we'd trigger sign-in, but for this prototype 
+    // we assume the user will click 'Sign In' or use the demo buttons in page.tsx
   };
 
   return (
@@ -113,13 +123,48 @@ export function LoginForm() {
               )}
             </Button>
 
+            {!isSignUp && (
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest">Prototype Quick Access</p>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => handleQuickAccess("admin@trsgroup.com")}
+                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
+                  >
+                    <UserCheck className="w-4 h-4 text-primary" />
+                    Admin Access (Intel Hub)
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => handleQuickAccess("rahul@trsgroup.com")}
+                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
+                  >
+                    <Users className="w-4 h-4 text-emerald-500" />
+                    Surveyor Access (Field App)
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => handleQuickAccess("vikram@trsgroup.com")}
+                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
+                  >
+                    <Briefcase className="w-4 h-4 text-amber-500" />
+                    Candidate Access (Marketplace)
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="text-center pt-4">
               <button 
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-xs font-bold text-slate-400 hover:text-primary transition-colors uppercase tracking-widest"
               >
-                {isSignUp ? "Already have an account? Sign In" : "Need an account? Contact Admin"}
+                {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
               </button>
             </div>
           </form>
