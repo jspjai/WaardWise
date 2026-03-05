@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { Role, User } from "@/lib/types";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, isConfigValid } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
@@ -28,12 +27,11 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState("");
-  const [isConfigured, setIsConfigured] = useState(true);
   const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
-    if (!auth || !db) {
-      setIsConfigured(false);
+    // If Firebase isn't configured or we're on the server, just stop loading
+    if (!isConfigValid || !auth || !db) {
       setLoading(false);
       return;
     }
@@ -45,9 +43,7 @@ export default function Home() {
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
             setUser(userData);
-            if (userData.role === "ADMIN") setActiveView("Dashboard");
-            else if (userData.role === "SURVEYOR") setActiveView("New Survey");
-            else if (userData.role === "CANDIDATE") setActiveView("Ward Market");
+            setDefaultView(userData.role);
           } else {
             const defaultUser: User = {
               id: firebaseUser.uid,
@@ -56,7 +52,7 @@ export default function Home() {
               role: "SURVEYOR"
             };
             setUser(defaultUser);
-            setActiveView("New Survey");
+            setDefaultView("SURVEYOR");
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);
@@ -70,6 +66,12 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  const setDefaultView = (role: Role) => {
+    if (role === "ADMIN") setActiveView("Dashboard");
+    else if (role === "SURVEYOR") setActiveView("New Survey");
+    else if (role === "CANDIDATE") setActiveView("Ward Market");
+  };
+
   const launchDemo = () => {
     setDemoMode(true);
     setUser({
@@ -81,20 +83,20 @@ export default function Home() {
     setActiveView("Dashboard");
   };
 
-  if (!isConfigured && !demoMode) {
+  if (!isConfigValid && !demoMode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="max-w-md w-full space-y-4">
-          <Alert variant="destructive" className="bg-white border-red-100 shadow-xl rounded-2xl p-6">
-            <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="font-headline font-bold text-red-600">Action Required</AlertTitle>
+          <Alert className="bg-white border-blue-100 shadow-xl rounded-2xl p-6">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            <AlertTitle className="font-headline font-bold text-slate-900">TRS Group Intelligence</AlertTitle>
             <AlertDescription className="mt-2 text-slate-600 text-sm leading-relaxed">
-              To enable the **TRS Group Intelligence Platform**, please add your Firebase credentials to the project environment variables or the `.env` file.
+              Your environment keys are detected. To finalize the connection, please ensure your **Firebase Project Settings** have an active Web App and Authorized Domains.
             </AlertDescription>
           </Alert>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center space-y-4">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Prototype Preview</p>
-            <p className="text-sm text-slate-600">Want to explore the interface while you set up your keys?</p>
+            <p className="text-sm text-slate-600">Want to explore the interface while your connection initializes?</p>
             <Button onClick={launchDemo} className="w-full bg-primary hover:bg-primary/90 h-12 rounded-xl font-bold gap-2">
               <Play className="w-4 h-4" />
               Launch Demo Mode
@@ -110,7 +112,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Loading Intelligence Profile</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Authenticating Portal</p>
         </div>
       </div>
     );
@@ -155,9 +157,7 @@ export default function Home() {
 
   const handleRoleChange = (newRole: Role) => {
     setUser({ ...user, role: newRole });
-    if (newRole === "ADMIN") setActiveView("Dashboard");
-    if (newRole === "SURVEYOR") setActiveView("New Survey");
-    if (newRole === "CANDIDATE") setActiveView("Ward Market");
+    setDefaultView(newRole);
   };
 
   return (

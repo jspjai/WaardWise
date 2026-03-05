@@ -15,20 +15,22 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-// Improved validation: Check if essential keys exist and aren't placeholders
+// Basic validation: Check if essential keys exist
 const isConfigValid = 
-  !!firebaseConfig.apiKey && 
-  firebaseConfig.apiKey !== "your-api-key" && 
-  firebaseConfig.apiKey.length > 10 &&
-  !!firebaseConfig.projectId;
+  typeof process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'string' && 
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY.length > 10 &&
+  typeof process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'string' &&
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID.length > 0;
 
-if (typeof window !== "undefined" && isConfigValid) {
-  try {
-    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-  } catch (error) {
-    console.error("Firebase initialization error:", error);
+if (typeof window !== "undefined") {
+  if (isConfigValid) {
+    try {
+      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+    }
   }
 }
 
