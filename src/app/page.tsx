@@ -18,9 +18,10 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
@@ -29,7 +30,6 @@ export default function Home() {
   const [userRole, setUserRole] = useState<Role | null>(null);
   const [userName, setUserName] = useState("User");
 
-  // Attempt to fetch profile from different role collections
   const adminDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "roles_admin", firebaseUser.uid) : null, [db, firebaseUser]);
   const surveyorDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "surveyors", firebaseUser.uid) : null, [db, firebaseUser]);
   const candidateDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "candidates", firebaseUser.uid) : null, [db, firebaseUser]);
@@ -51,10 +51,15 @@ export default function Home() {
       setUserRole("CANDIDATE");
       setUserName(candidateData.name || "Candidate");
       if (!activeView) setActiveView("Ward Market");
+    } else if (firebaseUser?.isAnonymous) {
+      // Fallback for Demo Mode (Anonymous users)
+      setUserRole("ADMIN");
+      setUserName("Demo User");
+      if (!activeView) setActiveView("Dashboard");
     }
-  }, [adminData, surveyorData, candidateData, activeView]);
+  }, [adminData, surveyorData, candidateData, activeView, firebaseUser]);
 
-  if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
+  if (isUserLoading || (firebaseUser && !firebaseUser.isAnonymous && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
@@ -69,14 +74,29 @@ export default function Home() {
     return <LoginForm />;
   }
 
-  if (!userRole && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
-    // New user with no role record yet - default to surveyor or show wait screen
+  // Handle users who are logged in but have no role defined yet
+  if (!userRole && !firebaseUser.isAnonymous && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 text-center">
-        <div className="max-w-md space-y-4">
-          <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-slate-900">Access Pending</h1>
-          <p className="text-sm text-slate-500">Your account is created, but a Super Admin has not yet assigned you a role. Please contact your operations manager.</p>
+        <div className="max-w-md space-y-6 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500">
+            <AlertCircle className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-headline font-extrabold text-slate-900">Account Pending Role</h1>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Your account ({firebaseUser.email}) is active, but hasn't been assigned a role yet. 
+              Please contact an administrator or skip to Demo Mode to explore.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button onClick={() => setUserRole("ADMIN")} className="w-full bg-slate-900 font-bold h-12 rounded-xl">
+              Skip to Demo (Admin)
+            </Button>
+            <Button variant="ghost" onClick={() => { window.location.reload(); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Refresh Status
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -119,7 +139,7 @@ export default function Home() {
     <SidebarProvider>
       <div className="flex bg-[#fcfcfd] min-h-screen w-full">
         <AppSidebar 
-          role={userRole || 'SURVEYOR'} 
+          role={userRole || 'ADMIN'} 
           activeView={activeView}
           onViewChange={setActiveView}
           userName={userName}
@@ -139,7 +159,7 @@ export default function Home() {
                    <div className="flex items-center gap-2">
                     <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Secure Connection</span>
                     <Badge variant="outline" className="text-[9px] font-bold py-0 h-4 border-emerald-100 text-emerald-600 bg-emerald-50">
-                      LIVE
+                      {firebaseUser?.isAnonymous ? 'DEMO' : 'LIVE'}
                     </Badge>
                   </div>
                 </div>

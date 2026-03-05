@@ -3,19 +3,20 @@
 
 import { useState } from "react";
 import { auth, db } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheck, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -27,7 +28,6 @@ export function LoginForm() {
     try {
       if (isSignUp) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // By default, new users are surveyors
         await setDoc(doc(db, "surveyors", userCredential.user.uid), {
           id: userCredential.user.uid,
           email: email,
@@ -44,6 +44,18 @@ export function LoginForm() {
       setError(err.message || "Authentication failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDemoMode = async () => {
+    setIsDemoLoading(true);
+    setError("");
+    try {
+      await signInAnonymously(auth);
+    } catch (err: any) {
+      setError("Demo Mode failed to initialize. Please check your Firebase configuration.");
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -106,7 +118,7 @@ export function LoginForm() {
 
             <Button 
               type="submit" 
-              disabled={isLoading}
+              disabled={isLoading || isDemoLoading}
               className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               {isLoading ? (
@@ -114,6 +126,30 @@ export function LoginForm() {
               ) : (
                 isSignUp ? "Create Account" : "Sign In"
               )}
+            </Button>
+
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-100" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-slate-400 font-bold tracking-widest">Or</span>
+              </div>
+            </div>
+
+            <Button 
+              type="button"
+              variant="outline"
+              disabled={isLoading || isDemoLoading}
+              onClick={handleDemoMode}
+              className="w-full h-12 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+            >
+              {isDemoLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4 text-amber-500" />
+              )}
+              Launch Demo Mode
             </Button>
 
             <div className="text-center pt-4">
