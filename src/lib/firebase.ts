@@ -18,6 +18,7 @@ const getConfigurationDiagnostics = () => {
     { name: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", value: firebaseConfig.authDomain },
     { name: "NEXT_PUBLIC_FIREBASE_PROJECT_ID", value: firebaseConfig.projectId },
     { name: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", value: firebaseConfig.storageBucket },
+    { name: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", value: firebaseConfig.messagingSenderId },
     { name: "NEXT_PUBLIC_FIREBASE_APP_ID", value: firebaseConfig.appId },
   ];
   

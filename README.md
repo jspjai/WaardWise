@@ -21,7 +21,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 GOOGLE_GENAI_API_KEY=your_gemini_api_key
 ```
 
-### 2. Common NPM Messages
+### 2. Common NPM Messages (Safe to Ignore)
 When running `npm install`, you might see messages like:
 - **"80 packages are looking for funding"**: This is **NOT an error**. It is a standard notice from NPM informing you that some library maintainers accept donations. You can safely ignore this.
 - **"found 0 vulnerabilities"**: This confirms your environment is secure.
@@ -31,7 +31,7 @@ When running `npm install`, you might see messages like:
 2. Click **Get Started** and enable **Email/Password**.
 
 ### 4. Demo Mode
-If you want to test the UI without setting up Firebase first, click **"Launch Demo Mode"** on the start screen. This uses mock data to showcase all features.
+If you want to test the UI without setting up Firebase first, click **"Launch Demo Mode"** on the start screen. This uses mock data to showcase all features including the AI Sentiment Analysis.
 
 ---
 *Created by TRS Group Development Team*
