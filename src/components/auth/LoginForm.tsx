@@ -1,16 +1,16 @@
+
 "use client";
 
 import { useState } from "react";
-import { auth, db, isConfigValid } from "@/lib/firebase";
+import { auth, db } from "@/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, UserCheck, Users, Briefcase } from "lucide-react";
+import { ShieldCheck, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Role, User } from "@/lib/types";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -24,21 +24,18 @@ export function LoginForm() {
     setIsLoading(true);
     setError("");
 
-    if (!isConfigValid || !auth) {
-      setError("Firebase is not configured. Please use 'Quick Access' buttons for local testing.");
-      setIsLoading(false);
-      return;
-    }
-
     try {
       if (isSignUp) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db!, "users", userCredential.user.uid), {
+        // By default, new users are surveyors
+        await setDoc(doc(db, "surveyors", userCredential.user.uid), {
           id: userCredential.user.uid,
           email: email,
           name: email.split('@')[0],
-          role: "SURVEYOR",
-          createdAt: new Date().toISOString()
+          assignedWardIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
@@ -47,26 +44,6 @@ export function LoginForm() {
       setError(err.message || "Authentication failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Mock login for prototype testing when Firebase is not connected
-  const handleQuickAccess = (email: string, role: Role) => {
-    // In a real app, this would trigger sign-in.
-    // Since we're in prototype mode, we'll "pretend" login if keys are missing
-    // by triggering a custom event or relying on the parent to handle the user state.
-    // For this prototype, we'll set the inputs and let the user know they can use Demo Mode 
-    // or we can force a local "mock login" by using a window event or similar.
-    
-    // Better yet: we'll use a hack to update the parent Home component's state
-    // by calling a function passed via props if we had it, but since we don't,
-    // we'll just set the fields and show a message.
-    
-    setEmail(email);
-    setPassword("password123");
-    
-    if (!isConfigValid) {
-      setError(`Firebase is unconfigured. Refresh and use 'Launch Demo Mode' on the start screen to test the ${role.toLowerCase()} interface.`);
     }
   };
 
@@ -138,41 +115,6 @@ export function LoginForm() {
                 isSignUp ? "Create Account" : "Sign In"
               )}
             </Button>
-
-            {!isSignUp && (
-              <div className="space-y-4 pt-6 border-t border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest">Prototype Quick Access</p>
-                <div className="grid grid-cols-1 gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => handleQuickAccess("admin@trsgroup.com", "ADMIN")}
-                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
-                  >
-                    <UserCheck className="w-4 h-4 text-primary" />
-                    Admin Access (Intel Hub)
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => handleQuickAccess("rahul@trsgroup.com", "SURVEYOR")}
-                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
-                  >
-                    <Users className="w-4 h-4 text-emerald-500" />
-                    Surveyor Access (Field App)
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => handleQuickAccess("vikram@trsgroup.com", "CANDIDATE")}
-                    className="h-11 rounded-xl border-slate-100 text-slate-600 font-bold text-xs justify-start px-4 gap-3"
-                  >
-                    <Briefcase className="w-4 h-4 text-amber-500" />
-                    Candidate Access (Marketplace)
-                  </Button>
-                </div>
-              </div>
-            )}
 
             <div className="text-center pt-4">
               <button 

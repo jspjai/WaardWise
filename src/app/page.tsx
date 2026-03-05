@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Role, User as AppUser } from "@/lib/types";
+import { Role } from "@/lib/types";
 import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
@@ -17,56 +18,48 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle, Play, Settings2, KeyRound, Info } from "lucide-react";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
   const db = useFirestore();
   const [activeView, setActiveView] = useState("");
-  const [localUser, setLocalUser] = useState<AppUser | null>(null);
+  const [userRole, setUserRole] = useState<Role | null>(null);
+  const [userName, setUserName] = useState("User");
 
-  // Memoize the user doc reference to avoid infinite loops in hooks
-  const userDocRef = useMemoFirebase(() => {
-    if (!db || !firebaseUser) return null;
-    return doc(db, "users", firebaseUser.uid);
-  }, [db, firebaseUser]);
+  // Attempt to fetch profile from different role collections
+  const adminDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "roles_admin", firebaseUser.uid) : null, [db, firebaseUser]);
+  const surveyorDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "surveyors", firebaseUser.uid) : null, [db, firebaseUser]);
+  const candidateDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "candidates", firebaseUser.uid) : null, [db, firebaseUser]);
 
-  const { data: userData, isLoading: isUserDataLoading } = useDoc<AppUser>(userDocRef);
+  const { data: adminData, isLoading: isAdminLoading } = useDoc(adminDocRef);
+  const { data: surveyorData, isLoading: isSurveyorLoading } = useDoc(surveyorDocRef);
+  const { data: candidateData, isLoading: isCandidateLoading } = useDoc(candidateDocRef);
 
   useEffect(() => {
-    if (userData) {
-      setLocalUser(userData);
-      setDefaultView(userData.role);
-    } else if (firebaseUser && !isUserDataLoading) {
-      // Fallback for new users or if doc doesn't exist yet
-      const defaultUser: AppUser = {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        name: firebaseUser.email?.split('@')[0] || "User",
-        role: "SURVEYOR"
-      };
-      setLocalUser(defaultUser);
-      setDefaultView("SURVEYOR");
+    if (adminData) {
+      setUserRole("ADMIN");
+      setUserName("Administrator");
+      if (!activeView) setActiveView("Dashboard");
+    } else if (surveyorData) {
+      setUserRole("SURVEYOR");
+      setUserName(surveyorData.name || "Surveyor");
+      if (!activeView) setActiveView("New Survey");
+    } else if (candidateData) {
+      setUserRole("CANDIDATE");
+      setUserName(candidateData.name || "Candidate");
+      if (!activeView) setActiveView("Ward Market");
     }
-  }, [userData, firebaseUser, isUserDataLoading]);
+  }, [adminData, surveyorData, candidateData, activeView]);
 
-  const setDefaultView = (role: Role) => {
-    if (activeView !== "") return; // Don't override if already set
-    if (role === "ADMIN") setActiveView("Dashboard");
-    else if (role === "SURVEYOR") setActiveView("New Survey");
-    else if (role === "CANDIDATE") setActiveView("Ward Market");
-  };
-
-  if (isUserLoading || (firebaseUser && isUserDataLoading)) {
+  if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Synchronizing Intelligence</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Authenticating Portal</p>
         </div>
       </div>
     );
@@ -76,10 +69,21 @@ export default function Home() {
     return <LoginForm />;
   }
 
-  const renderContent = () => {
-    if (!localUser) return null;
+  if (!userRole && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
+    // New user with no role record yet - default to surveyor or show wait screen
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 text-center">
+        <div className="max-w-md space-y-4">
+          <ShieldCheck className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900">Access Pending</h1>
+          <p className="text-sm text-slate-500">Your account is created, but a Super Admin has not yet assigned you a role. Please contact your operations manager.</p>
+        </div>
+      </div>
+    );
+  }
 
-    if (localUser.role === "ADMIN") {
+  const renderContent = () => {
+    if (userRole === "ADMIN") {
       switch (activeView) {
         case "Dashboard": return <AdminDashboard />;
         case "Wards & Booths": return <WardsBooths />;
@@ -90,7 +94,7 @@ export default function Home() {
       }
     }
 
-    if (localUser.role === "CANDIDATE") {
+    if (userRole === "CANDIDATE") {
       switch (activeView) {
         case "Ward Market": return <CandidatePortal />;
         case "My Reports": return <CandidateReports />;
@@ -99,7 +103,7 @@ export default function Home() {
       }
     }
 
-    if (localUser.role === "SURVEYOR") {
+    if (userRole === "SURVEYOR") {
       switch (activeView) {
         case "New Survey": return <SurveyForm />;
         case "My Submissions": return <SurveyorSubmissions />;
@@ -111,22 +115,14 @@ export default function Home() {
     return null;
   };
 
-  const handleRoleChange = (newRole: Role) => {
-    if (localUser) {
-      setLocalUser({ ...localUser, role: newRole });
-      setDefaultView(newRole);
-    }
-  };
-
   return (
     <SidebarProvider>
       <div className="flex bg-[#fcfcfd] min-h-screen w-full">
         <AppSidebar 
-          role={localUser?.role || 'SURVEYOR'} 
-          onRoleChange={handleRoleChange} 
+          role={userRole || 'SURVEYOR'} 
           activeView={activeView}
           onViewChange={setActiveView}
-          userName={localUser?.name || "User"}
+          userName={userName}
         />
         
         <SidebarInset className="flex-1 flex flex-col min-w-0">
@@ -141,13 +137,10 @@ export default function Home() {
                 
                 <div className="hidden sm:flex items-center gap-4 border-l pl-4 border-slate-100 ml-2">
                    <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Active Intel</span>
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Secure Connection</span>
                     <Badge variant="outline" className="text-[9px] font-bold py-0 h-4 border-emerald-100 text-emerald-600 bg-emerald-50">
-                      LIVE HUB
+                      LIVE
                     </Badge>
-                    <span className="text-xs font-bold text-slate-700 ml-1">
-                      {localUser?.role === 'SURVEYOR' ? 'Field Collection Console' : 'Ward Analytics Hub'}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -159,7 +152,7 @@ export default function Home() {
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Nominal</span>
               </div>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold text-xs">
-                {localUser?.name.charAt(0).toUpperCase()}
+                {userName.charAt(0).toUpperCase()}
               </div>
             </div>
           </header>

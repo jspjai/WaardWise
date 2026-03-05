@@ -1,7 +1,7 @@
+
 "use client";
 
-import { cn } from "@/lib/utils";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { 
   LayoutDashboard, 
@@ -31,13 +31,12 @@ import {
 
 interface SidebarProps {
   role: Role;
-  onRoleChange: (role: Role) => void;
   activeView: string;
   onViewChange: (view: string) => void;
   userName: string;
 }
 
-export function AppSidebar({ role, onRoleChange, activeView, onViewChange, userName }: SidebarProps) {
+export function AppSidebar({ role, activeView, onViewChange, userName }: SidebarProps) {
   const navItems = {
     ADMIN: [
       { name: "Dashboard", icon: LayoutDashboard },
@@ -84,7 +83,7 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange, userN
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Navigation
+            Main Portal
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -107,31 +106,6 @@ export function AppSidebar({ role, onRoleChange, activeView, onViewChange, userN
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Local Role Switcher (Prototype Feature Only) */}
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Dev Mode: Role Selection
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="px-2 space-y-1">
-              {(['ADMIN', 'SURVEYOR', 'CANDIDATE'] as Role[]).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => onRoleChange(r)}
-                  className={cn(
-                    "w-full text-left px-3 py-1.5 text-[11px] rounded-md transition-all font-bold uppercase tracking-tight",
-                    role === r 
-                      ? "bg-primary text-white shadow-md shadow-primary/10" 
-                      : "text-slate-500 hover:bg-slate-50"
-                  )}
-                >
-                  {r.charAt(0) + r.slice(1).toLowerCase()} Mode
-                </button>
-              ))}
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

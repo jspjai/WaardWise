@@ -40,6 +40,11 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
+// Initialize and export SDK singletons for direct import in components like LoginForm and Sidebar
+const sdks = initializeFirebase();
+export const auth = sdks.auth;
+export const db = sdks.firestore;
+
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';

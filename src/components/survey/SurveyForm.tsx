@@ -2,38 +2,25 @@
 "use client";
 
 import { useState } from "react";
+import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, doc, serverTimestamp } from "firebase/firestore";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   ChevronRight, 
   ChevronLeft, 
   CheckCircle2, 
   AlertCircle,
-  Users,
   AlertTriangle,
-  Building2,
   FileText,
-  ShieldCheck,
-  Star,
-  Users2,
-  Vote,
   Sparkles,
   Loader2,
-  TrendingUp,
-  MessageSquare
+  TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { aiIssueSentimentExtractor, AiIssueSentimentExtractorOutput } from "@/ai/flows/ai-issue-sentiment-extractor";
@@ -43,23 +30,34 @@ const SECTIONS = [
   "Booth Identification",
   "Household Identification",
   "Demographics",
-  "Social & Community",
   "Voter Status",
   "Issue Priority",
-  "Governance Perception",
-  "Leadership",
-  "Women & Safety",
   "Political Sentiment",
   "Field Notes"
 ];
 
 export function SurveyForm() {
+  const { user } = useUser();
+  const db = useFirestore();
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState<AiIssueSentimentExtractorOutput | null>(null);
-  const [notes, setNotes] = useState("");
-  const [topIssue, setTopIssue] = useState("");
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    wardId: "ward-80",
+    boothId: "",
+    boothNumber: "",
+    respondentName: "",
+    houseNumberLandmark: "",
+    gender: "Male",
+    ageGroup: "26–40",
+    householdVoterMood: "Neutral",
+    topIssue: "",
+    notes: ""
+  });
   
   const totalSteps = SECTIONS.length;
   const progress = (step / totalSteps) * 100;
@@ -75,12 +73,12 @@ export function SurveyForm() {
   };
 
   const handleAiAnalysis = async () => {
-    if (!notes) return;
+    if (!formData.notes) return;
     setIsAnalyzing(true);
     try {
       const result = await aiIssueSentimentExtractor({
-        top1LocalIssue: topIssue || "General concerns",
-        fieldObserverNotes: notes
+        top1LocalIssue: formData.topIssue || "General concerns",
+        fieldObserverNotes: formData.notes
       });
       setAiResult(result);
     } catch (error) {
@@ -90,30 +88,51 @@ export function SurveyForm() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-  };
+    if (!user || !db) return;
+    
+    setIsSubmitting(true);
+    const surveysCol = collection(db, "surveys");
+    
+    const surveyPayload = {
+      ...formData,
+      surveyorId: user.uid,
+      surveyDate: new Date().toISOString(),
+      submissionTimestamp: new Date().toISOString(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      // Defaulting multi-selects and complex types for prototype completeness
+      socialNetworkAffiliations: [],
+      leadershipQualities: [],
+      yearsLivingInArea: "10+",
+      languageSpokenAtHome: "Kannada",
+      householdMaleVoterCount: 1,
+      householdFemaleVoterCount: 1,
+      householdYouthVoterCount: 0,
+      votingBehavior: "Always vote",
+      waterSupplySeverity: "Medium",
+      roadsSeverity: "Medium",
+      drainageSeverity: "Low",
+      garbageSeverity: "Medium",
+      safetySeverity: "Low",
+      wardDevelopmentSatisfaction: "Neutral",
+      leaderAccessibility: "Sometimes reachable",
+      womenSafetyPerception: "Safe",
+      mainWomenIssue: "Water",
+      visibleSocioEconomicStatus: "Middle",
+      keyLocalInfluenceFactor: "None",
+      observerNotes: formData.notes,
+      top1LocalIssue: formData.topIssue
+    };
 
-  const RatingScale = ({ label, icon: Icon }: { label: string, icon?: any }) => (
-    <div className="space-y-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className="w-4 h-4 text-primary" />}
-        <Label className="text-sm font-bold text-slate-800">{label}</Label>
-      </div>
-      <div className="grid grid-cols-5 gap-1.5">
-        {[1, 2, 3, 4, 5].map((num) => (
-          <button
-            key={num}
-            type="button"
-            className="h-12 rounded-lg border border-slate-200 bg-white flex flex-col items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all group focus:bg-primary focus:text-white"
-          >
-            <span className="text-sm font-bold">{num}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+    addDocumentNonBlocking(surveysCol, surveyPayload);
+    
+    setTimeout(() => {
+      setIsSubmitted(true);
+      setIsSubmitting(false);
+    }, 800);
+  };
 
   if (isSubmitted) {
     return (
@@ -122,13 +141,10 @@ export function SurveyForm() {
           <CheckCircle2 className="w-10 h-10 text-emerald-600" />
         </div>
         <h1 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-slate-900 tracking-tight">Survey Submitted!</h1>
-        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved and will be visible in the ward analysis dashboard shortly.</p>
+        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved and is now being processed for ward analytics.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); setNotes(""); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
+          <Button onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); setFormData({...formData, notes: "", topIssue: ""}); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
             Start New Survey
-          </Button>
-          <Button variant="outline" className="h-12 px-8 rounded-xl font-bold border-slate-200 text-slate-600">
-            View Submissions
           </Button>
         </div>
       </div>
@@ -159,17 +175,18 @@ export function SurveyForm() {
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Ward Name</Label>
-                    <Input defaultValue="Indiranagar" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Ward ID</Label>
+                    <Input readOnly value={formData.wardId} className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Booth Number</Label>
-                    <Input placeholder="e.g. 142" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                    <Input 
+                      placeholder="e.g. 142" 
+                      value={formData.boothNumber}
+                      onChange={(e) => setFormData({...formData, boothNumber: e.target.value, boothId: `booth-${e.target.value}`})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Polling Station Name</Label>
-                  <Input placeholder="Enter station name" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
                 </div>
               </div>
             )}
@@ -178,47 +195,38 @@ export function SurveyForm() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Address / House Number</Label>
-                  <Input placeholder="123, 4th Main..." className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                  <Input 
+                    placeholder="123, 4th Main..." 
+                    value={formData.houseNumberLandmark}
+                    onChange={(e) => setFormData({...formData, houseNumberLandmark: e.target.value})}
+                    className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                  />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Head of Family</Label>
-                    <Input placeholder="Enter full name" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Contact Number</Label>
-                    <Input placeholder="+91 XXXXX XXXXX" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Respondent Name</Label>
+                  <Input 
+                    placeholder="Enter full name" 
+                    value={formData.respondentName}
+                    onChange={(e) => setFormData({...formData, respondentName: e.target.value})}
+                    className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                  />
                 </div>
               </div>
             )}
 
             {step === 6 && (
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2 bg-amber-50 p-3 rounded-xl border border-amber-100">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Rate severity of local issues</p>
-                </div>
-                {["Water Supply", "Roads", "Drainage", "Garbage", "Electricity", "Public Transport"].map((issue) => (
-                  <div key={issue} className="flex flex-col gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50/20">
-                    <span className="font-bold text-slate-800 text-sm">{issue}</span>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button type="button" variant="ghost" className="h-10 px-4 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-extrabold text-[10px] uppercase">Low</Button>
-                      <Button type="button" variant="ghost" className="h-10 px-4 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 font-extrabold text-[10px] uppercase">Med</Button>
-                      <Button type="button" variant="ghost" className="h-10 px-4 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-extrabold text-[10px] uppercase">High</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {step === 10 && (
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <Label className="text-sm font-bold text-slate-800">Likelihood to Vote for Incumbent Party</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {["Very Likely", "Likely", "Unlikely", "Undecided"].map((opt) => (
-                      <Button key={opt} type="button" variant="outline" className="h-14 rounded-xl border-slate-200 hover:border-primary hover:text-primary transition-all font-bold text-xs uppercase">
+                  <Label className="text-sm font-bold text-slate-800">Political Sentiment</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {["Pro-change", "Neutral", "Pro-continuity"].map((opt) => (
+                      <Button 
+                        key={opt} 
+                        type="button" 
+                        variant={formData.householdVoterMood === opt ? "default" : "outline"} 
+                        onClick={() => setFormData({...formData, householdVoterMood: opt})}
+                        className="h-14 rounded-xl font-bold text-xs uppercase"
+                      >
                         {opt}
                       </Button>
                     ))}
@@ -227,104 +235,66 @@ export function SurveyForm() {
                 <div className="space-y-4">
                   <Label className="text-sm font-bold text-slate-800">Top Local Issue</Label>
                   <Input 
-                    placeholder="Briefly state the main concern" 
-                    value={topIssue}
-                    onChange={(e) => setTopIssue(e.target.value)}
+                    placeholder="Main concern (e.g. Water Scarcity)" 
+                    value={formData.topIssue}
+                    onChange={(e) => setFormData({...formData, topIssue: e.target.value})}
                     className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
                   />
                 </div>
               </div>
             )}
 
-            {step === 11 && (
+            {step === 7 && (
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Field Observer Notes</Label>
                   <Textarea 
-                    placeholder="Enter observations about household attitude or specific complaints..." 
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Observations about household attitude or specific complaints..." 
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     className="min-h-[160px] md:min-h-[200px] resize-none bg-slate-50 border-slate-100 rounded-2xl p-4 text-sm leading-relaxed" 
                   />
                 </div>
 
-                {notes.length > 20 && (
+                {formData.notes.length > 20 && (
                   <Button 
                     type="button"
                     onClick={handleAiAnalysis}
                     disabled={isAnalyzing}
                     className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 font-bold shadow-lg gap-2"
                   >
-                    {isAnalyzing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                    )}
-                    {isAnalyzing ? "Analyzing Intelligence..." : "Run AI Sentiment Analysis"}
+                    {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-400" />}
+                    {isAnalyzing ? "Analyzing..." : "Run AI Sentiment Analysis"}
                   </Button>
                 )}
 
                 {aiResult && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-primary" />
-                          <h4 className="text-sm font-extrabold text-primary">AI Insights Extracted</h4>
-                        </div>
-                        <Badge className={cn(
-                          "uppercase text-[10px] font-bold px-2 py-0.5",
-                          aiResult.overallSentiment === 'Positive' ? 'bg-emerald-500' : 
-                          aiResult.overallSentiment === 'Negative' ? 'bg-rose-500' : 'bg-slate-500'
-                        )}>
-                          {aiResult.overallSentiment} Sentiment
-                        </Badge>
+                  <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <h4 className="text-sm font-extrabold text-primary">AI Insights</h4>
                       </div>
-
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Detected Issues</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {aiResult.keyLocalIssues.map((issue, i) => (
-                              <Badge key={i} variant="outline" className="bg-white border-slate-100 text-slate-600 text-[10px] py-0">
-                                {issue}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Intelligence Summary</p>
-                          <p className="text-xs text-slate-600 leading-relaxed italic">"{aiResult.summary}"</p>
-                        </div>
-                      </div>
+                      <Badge className={cn(
+                        "uppercase text-[10px] font-bold px-2 py-0.5",
+                        aiResult.overallSentiment === 'Positive' ? 'bg-emerald-500' : 
+                        aiResult.overallSentiment === 'Negative' ? 'bg-rose-500' : 'bg-slate-500'
+                      )}>
+                        {aiResult.overallSentiment}
+                      </Badge>
                     </div>
-                  </div>
-                )}
-
-                {!aiResult && !isAnalyzing && (
-                  <div className="bg-amber-50 p-5 rounded-2xl flex items-start gap-4 border border-amber-100">
-                    <div className="p-2 bg-amber-100 rounded-xl">
-                      <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-extrabold text-amber-700 mb-1">AI Recommendation</h4>
-                      <p className="text-[11px] text-amber-600/70 font-semibold leading-relaxed">
-                        Detailed notes allow our systems to detect early political shifts. Use the "Run AI Analysis" button above to verify your findings.
-                      </p>
-                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed italic">"{aiResult.summary}"</p>
                   </div>
                 )}
               </div>
             )}
-            
-            {/* Standard Demographics / Social Steps Omitted for brevity in this mock view, assuming they follow the same pattern */}
-            {![1, 2, 6, 10, 11].includes(step) && (
+
+            {![1, 2, 6, 7].includes(step) && (
               <div className="py-12 text-center space-y-4">
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                    <FileText className="w-6 h-6 text-slate-300" />
                 </div>
-                <p className="text-sm font-bold text-slate-400">Section details for {SECTIONS[step-1]}</p>
+                <p className="text-sm font-bold text-slate-400">Demographic data collection for Section {step}</p>
               </div>
             )}
 
@@ -336,7 +306,7 @@ export function SurveyForm() {
             type="button" 
             variant="outline" 
             onClick={prevStep} 
-            disabled={step === 1}
+            disabled={step === 1 || isSubmitting}
             className="flex-1 max-w-[140px] rounded-xl h-12 md:h-14 font-bold border-slate-200 text-slate-600 bg-white"
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -355,10 +325,11 @@ export function SurveyForm() {
           ) : (
             <Button 
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 md:h-14 font-bold shadow-lg shadow-emerald-200 transition-all hover:scale-[1.02]"
             >
-              Submit
-              <CheckCircle2 className="w-4 h-4 ml-2" />
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+              {isSubmitting ? "Submitting..." : "Submit Survey"}
             </Button>
           )}
         </div>

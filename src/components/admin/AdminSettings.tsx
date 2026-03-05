@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { db } from "@/lib/firebase";
+import { db } from "@/firebase";
 import { doc, setDoc, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -32,7 +32,7 @@ export function AdminSettings() {
     if (!db) {
       toast({
         title: "Firebase Error",
-        description: "Firestore is not initialized. Check your .env file.",
+        description: "Firestore is not initialized. Check your config.",
         variant: "destructive"
       });
       return;
@@ -51,10 +51,6 @@ export function AdminSettings() {
       wards.forEach(ward => {
         batch.set(doc(db, "wards", ward.id), ward);
       });
-
-      // We don't create users here because they must be created via Auth first,
-      // but we can prep the Firestore documents for the known emails.
-      // The Login form handles the Firestore profile creation on first sign-up.
 
       await batch.commit();
       
@@ -152,7 +148,7 @@ export function AdminSettings() {
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <p className="text-sm text-slate-400 leading-relaxed">
-                If this is a new Firebase project, use this tool to initialize the mandatory Firestore collections with sample Wards and schema.
+                Initialize the mandatory Firestore collections with sample Wards and schema.
               </p>
               <Button 
                 onClick={handleBootstrap}
