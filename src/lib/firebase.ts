@@ -15,18 +15,24 @@ let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 
-// Enhanced validation to help user identify missing keys
-const getMissingKeys = () => {
+// Enhanced validation to help user identify missing or invalid keys
+const getConfigurationDiagnostics = () => {
   const keys = [
-    { name: "NEXT_PUBLIC_FIREBASE_API_KEY", value: process.env.NEXT_PUBLIC_FIREBASE_API_KEY },
-    { name: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", value: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN },
-    { name: "NEXT_PUBLIC_FIREBASE_PROJECT_ID", value: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID },
+    { name: "NEXT_PUBLIC_FIREBASE_API_KEY", value: firebaseConfig.apiKey },
+    { name: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", value: firebaseConfig.authDomain },
+    { name: "NEXT_PUBLIC_FIREBASE_PROJECT_ID", value: firebaseConfig.projectId },
+    { name: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", value: firebaseConfig.storageBucket },
+    { name: "NEXT_PUBLIC_FIREBASE_APP_ID", value: firebaseConfig.appId },
   ];
-  return keys.filter(k => !k.value || k.value.includes("your_")).map(k => k.name);
+  
+  const missing = keys.filter(k => !k.value || k.value.trim() === "" || k.value.includes("your-")).map(k => k.name);
+  return {
+    isValid: missing.length === 0,
+    missing
+  };
 };
 
-const missing = getMissingKeys();
-const isConfigValid = missing.length === 0;
+const { isValid: isConfigValid, missing } = getConfigurationDiagnostics();
 
 if (typeof window !== "undefined") {
   if (isConfigValid) {
@@ -34,13 +40,13 @@ if (typeof window !== "undefined") {
       app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       db = getFirestore(app);
       auth = getAuth(app);
-      console.log("✅ Firebase initialized successfully:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+      console.log("✅ TRS Intelligence: Firebase initialized successfully.");
     } catch (error) {
-      console.error("❌ Firebase initialization failed:", error);
+      console.error("❌ TRS Intelligence: Firebase initialization failed:", error);
     }
   } else {
-    console.warn("⚠️ Firebase configuration incomplete. Missing keys:", missing.join(", "));
+    console.warn("⚠️ TRS Intelligence: Configuration incomplete. Missing keys:", missing.join(", "));
   }
 }
 
-export { app, db, auth, isConfigValid };
+export { app, db, auth, isConfigValid, missing };
