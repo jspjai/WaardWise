@@ -8,6 +8,7 @@ import {
   useMemoFirebase, 
   createAuthAccountSecondary, 
   useAuth,
+  useUser,
   deleteDocumentNonBlocking
 } from "@/firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 export function UserManagement() {
   const db = useFirestore();
   const auth = useAuth();
+  const { user: currentUser } = useUser();
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -91,6 +93,10 @@ export function UserManagement() {
 
   const handleDelete = async (id: string) => {
     if (!db) return;
+    if (id === currentUser?.uid) {
+      toast({ title: "Action Restricted", description: "You cannot remove your own administrative access.", variant: "destructive" });
+      return;
+    }
     if (!confirm("Are you sure you want to revoke access for this user? This action will remove their profile from the database.")) return;
     
     setDeletingId(id);
@@ -187,7 +193,7 @@ export function UserManagement() {
                 </TableHeader>
                 <TableBody>
                   {users?.map(u => (
-                    <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-50">
+                    <TableRow key={u.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors">
                       <TableCell className="font-bold text-slate-900 pl-6">{u.name}</TableCell>
                       <TableCell>
                         <Badge className={cn(
@@ -201,7 +207,7 @@ export function UserManagement() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-300 hover:text-primary" 
+                          className="h-8 w-8 text-slate-400 hover:text-primary transition-colors" 
                           disabled={processingId === u.id}
                           onClick={() => handleResetPassword(u.email, u.id)}
                           title="Reset Password"
@@ -211,17 +217,20 @@ export function UserManagement() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-300 hover:text-red-500" 
-                          disabled={deletingId === u.id}
+                          className={cn(
+                            "h-8 w-8 transition-colors",
+                            u.id === currentUser?.uid ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-red-500"
+                          )}
+                          disabled={deletingId === u.id || u.id === currentUser?.uid}
                           onClick={() => handleDelete(u.id)}
-                          title="Delete User"
+                          title={u.id === currentUser?.uid ? "Cannot delete yourself" : "Delete User"}
                         >
                           {deletingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {users?.length === 0 && (
+                  {(!users || users.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-20 text-slate-400 uppercase text-[10px] font-bold tracking-widest">No users authorized</TableCell>
                     </TableRow>

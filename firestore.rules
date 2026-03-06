@@ -8,6 +8,7 @@ service cloud.firestore {
     }
 
     // Safer admin check that handles missing user documents gracefully
+    // Prioritizes the hardcoded super admin email for bootstrapping
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'suryajai642@gmail.com' ||
