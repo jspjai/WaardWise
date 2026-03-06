@@ -1,6 +1,6 @@
 "use client";
 
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,27 +20,15 @@ import {
 import { cn } from "@/lib/utils";
 import { Ward } from "@/lib/types";
 
-const MOCK_WARDS: Ward[] = [
-  { id: "ward-80", name: "Indiranagar", district: "Bengaluru Central", surveyCount: 1240 },
-  { id: "ward-81", name: "Malleshwaram", district: "Bengaluru North", surveyCount: 890 },
-  { id: "ward-82", name: "Koramangala", district: "Bengaluru South", surveyCount: 2100 },
-  { id: "ward-83", name: "HSR Layout", district: "Bengaluru South", surveyCount: 1550 },
-];
-
 export function WardsBooths() {
   const db = useFirestore();
-  const { user } = useUser();
   
   const wardsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return collection(db, "wards");
   }, [db]);
 
-  const { data: firestoreWards, isLoading } = useCollection<Ward>(wardsQuery);
-
-  // Use mock data if firestore is empty and user is in demo mode (anonymous)
-  const isDemo = user?.isAnonymous;
-  const wards = (firestoreWards && firestoreWards.length > 0) ? firestoreWards : (isDemo ? MOCK_WARDS : []);
+  const { data: wards, isLoading } = useCollection<Ward>(wardsQuery);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -58,9 +46,9 @@ export function WardsBooths() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Wards", value: wards?.length || "0", icon: Map, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Booths", value: isDemo ? "1,240" : (wards?.length || 0) * 15, icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Active Surveyors", value: isDemo ? "156" : "0", icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Avg. Coverage", value: isDemo ? "82.4%" : "0%", icon: ChevronRight, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total Booths", value: (wards?.length || 0) * 15, icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Active Surveyors", value: "0", icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Avg. Coverage", value: "0%", icon: ChevronRight, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-sm bg-white overflow-hidden rounded-2xl">
             <CardContent className="p-4 md:p-5 flex flex-col gap-3">
@@ -87,7 +75,7 @@ export function WardsBooths() {
         </Button>
       </div>
 
-      {isLoading && !isDemo ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
@@ -114,11 +102,11 @@ export function WardsBooths() {
                 <div className="grid grid-cols-3 border-y border-slate-50 bg-slate-50/30">
                   <div className="p-4 text-center border-r border-slate-50">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Booths</p>
-                    <p className="text-sm font-extrabold text-slate-900 mt-1">{ward.surveyCount > 0 ? (ward.surveyCount / 10).toFixed(0) : (isDemo ? 24 : 0)}</p>
+                    <p className="text-sm font-extrabold text-slate-900 mt-1">{ward.surveyCount > 0 ? (ward.surveyCount / 10).toFixed(0) : "0"}</p>
                   </div>
                   <div className="p-4 text-center border-r border-slate-50">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Coverage</p>
-                    <p className="text-sm font-extrabold text-emerald-600 mt-1">{ward.surveyCount > 0 ? "85%" : (isDemo ? "78%" : "0%")}</p>
+                    <p className="text-sm font-extrabold text-emerald-600 mt-1">{ward.surveyCount > 0 ? "85%" : "0%"}</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Surveys</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,21 +19,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MOCK_SURVEYORS = [
-  { id: "s-1", name: "Rahul Sharma", email: "rahul@trs.pro", isActive: true, assignedWardIds: ["ward-80", "ward-81"] },
-  { id: "s-2", name: "Priya V", email: "priya@trs.pro", isActive: true, assignedWardIds: ["ward-80"] },
-  { id: "s-3", name: "Amit Singh", email: "amit@trs.pro", isActive: false, assignedWardIds: ["ward-82"] },
-  { id: "s-4", name: "Sneha Kapur", email: "sneha@trs.pro", isActive: true, assignedWardIds: ["ward-81", "ward-83"] },
-];
-
 export function SurveyorsManagement() {
   const db = useFirestore();
-  const { user } = useUser();
   const surveyorsQuery = useMemoFirebase(() => collection(db, "surveyors"), [db]);
-  const { data: firestoreSurveyors, isLoading } = useCollection(surveyorsQuery);
-
-  const isDemo = user?.isAnonymous;
-  const surveyors = (firestoreSurveyors && firestoreSurveyors.length > 0) ? firestoreSurveyors : (isDemo ? MOCK_SURVEYORS : []);
+  const { data: surveyors, isLoading } = useCollection(surveyorsQuery);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -52,7 +41,7 @@ export function SurveyorsManagement() {
         {[
           { label: "Active Team", value: surveyors?.filter(s => s.isActive).length || "0", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Total Recruits", value: surveyors?.length || "0", icon: Clock, color: "text-slate-500", bg: "bg-slate-50" },
-          { label: "Top Region", value: "Bengaluru Central", icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Top Region", value: "Pending Analysis", icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-sm bg-white overflow-hidden rounded-2xl">
             <CardContent className="p-4 flex items-center gap-4">
@@ -79,7 +68,7 @@ export function SurveyorsManagement() {
         </Button>
       </div>
 
-      {isLoading && !isDemo ? (
+      {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>

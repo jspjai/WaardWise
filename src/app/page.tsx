@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -51,15 +50,10 @@ export default function Home() {
       setUserRole("CANDIDATE");
       setUserName(candidateData.name || "Candidate");
       if (!activeView) setActiveView("Ward Market");
-    } else if (firebaseUser?.isAnonymous) {
-      // Fallback for Demo Mode (Anonymous users)
-      setUserRole("ADMIN");
-      setUserName("Demo User");
-      if (!activeView) setActiveView("Dashboard");
     }
-  }, [adminData, surveyorData, candidateData, activeView, firebaseUser]);
+  }, [adminData, surveyorData, candidateData, activeView]);
 
-  if (isUserLoading || (firebaseUser && !firebaseUser.isAnonymous && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
+  if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
@@ -74,8 +68,8 @@ export default function Home() {
     return <LoginForm />;
   }
 
-  // Handle users who are logged in but have no role defined yet
-  if (!userRole && !firebaseUser.isAnonymous && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
+  // Handle users who are logged in but have no role defined yet in Firestore
+  if (!userRole && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 text-center">
         <div className="max-w-md space-y-6 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50">
@@ -83,16 +77,13 @@ export default function Home() {
             <AlertCircle className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-xl font-headline font-extrabold text-slate-900">Account Pending Role</h1>
+            <h1 className="text-xl font-headline font-extrabold text-slate-900">Account Pending Assignment</h1>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Your account ({firebaseUser.email}) is active, but hasn't been assigned a role yet. 
-              Please contact an administrator or skip to Demo Mode to explore.
+              Your account ({firebaseUser.email}) is active, but hasn't been assigned a system role (Admin, Surveyor, or Candidate). 
+              Please contact your system administrator to gain access.
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Button onClick={() => setUserRole("ADMIN")} className="w-full bg-slate-900 font-bold h-12 rounded-xl">
-              Skip to Demo (Admin)
-            </Button>
             <Button variant="ghost" onClick={() => { window.location.reload(); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Refresh Status
             </Button>
@@ -159,7 +150,7 @@ export default function Home() {
                    <div className="flex items-center gap-2">
                     <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Secure Connection</span>
                     <Badge variant="outline" className="text-[9px] font-bold py-0 h-4 border-emerald-100 text-emerald-600 bg-emerald-50">
-                      {firebaseUser?.isAnonymous ? 'DEMO' : 'LIVE'}
+                      LIVE
                     </Badge>
                   </div>
                 </div>

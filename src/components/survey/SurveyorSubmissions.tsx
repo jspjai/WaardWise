@@ -19,19 +19,12 @@ import {
   Eye, 
   MoreVertical, 
   CheckCircle2, 
-  Clock,
   MapPin,
   Calendar,
   Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-const MOCK_SUBMISSIONS = [
-  { id: "sub-1", respondentName: "Kumar S.", boothNumber: "142", surveyDate: new Date().toISOString(), householdVoterMood: "Pro-change" },
-  { id: "sub-2", respondentName: "Lakshmi Rao", boothNumber: "142", surveyDate: new Date(Date.now() - 86400000).toISOString(), householdVoterMood: "Neutral" },
-  { id: "sub-3", respondentName: "Anil K.", boothNumber: "145", surveyDate: new Date(Date.now() - 172800000).toISOString(), householdVoterMood: "Pro-continuity" },
-];
 
 export function SurveyorSubmissions() {
   const { user } = useUser();
@@ -42,10 +35,7 @@ export function SurveyorSubmissions() {
     return query(collection(db, "surveys"), where("surveyorId", "==", user.uid));
   }, [db, user]);
 
-  const { data: firestoreSubmissions, isLoading } = useCollection(submissionsQuery);
-
-  const isDemo = user?.isAnonymous;
-  const submissions = (firestoreSubmissions && firestoreSubmissions.length > 0) ? firestoreSubmissions : (isDemo ? MOCK_SUBMISSIONS : []);
+  const { data: submissions, isLoading } = useCollection(submissionsQuery);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -65,7 +55,7 @@ export function SurveyorSubmissions() {
         </div>
       </div>
 
-      {isLoading && !isDemo ? (
+      {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
