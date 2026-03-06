@@ -1,8 +1,8 @@
 
 "use client";
 
-import { auth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { useAuth } from "@/firebase";
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -28,6 +28,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProps {
   role: Role;
@@ -37,6 +38,9 @@ interface SidebarProps {
 }
 
 export function AppSidebar({ role, activeView, onViewChange, userName }: SidebarProps) {
+  const auth = useAuth();
+  const { toast } = useToast();
+
   const navItems = {
     ADMIN: [
       { name: "Dashboard", icon: LayoutDashboard },
@@ -62,8 +66,16 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
   const handleLogout = async () => {
     try {
       await signOut(auth);
-    } catch (error) {
-      console.error("Error signing out:", error);
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Logout Error",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -95,7 +107,7 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
                     className="group"
                     onClick={() => onViewChange(item.name)}
                   >
-                    <button className="flex items-center justify-between w-full">
+                    <button className="flex items-center justify-between w-full text-left">
                       <div className="flex items-center gap-3">
                         <item.icon className="w-4 h-4" />
                         <span className="font-medium">{item.name}</span>
