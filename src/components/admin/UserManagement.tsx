@@ -2,8 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, useAuth } from "@/firebase";
 import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,14 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield, Loader2, Search, Lock, Mail, User } from "lucide-react";
+import { UserPlus, Trash2, Shield, Loader2, Search, Lock, Mail, User, KeyRound } from "lucide-react";
 import { Role, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function UserManagement() {
   const db = useFirestore();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: 'SURVEYOR' as Role });
 
   const usersQuery = useMemoFirebase(() => {
@@ -36,10 +39,8 @@ export function UserManagement() {
     
     setIsAdding(true);
     try {
-      // 1. Create the Auth Account (Secondary instance so Admin stays logged in)
       const uid = await createAuthAccountSecondary(newUser.email, newUser.password);
       
-      // 2. Create the User Record in Firestore
       await setDoc(doc(db, "users", uid), {
         id: uid,
         name: newUser.name,
@@ -51,13 +52,26 @@ export function UserManagement() {
 
       toast({ 
         title: "User Created Successfully", 
-        description: `Account created for ${newUser.name}. Password: ${newUser.password}` 
+        description: `Account created for ${newUser.name}. Provide them with the password.` 
       });
       setNewUser({ name: "", email: "", password: "", role: 'SURVEYOR' });
     } catch (error: any) {
       toast({ title: "Creation Failed", description: error.message, variant: "destructive" });
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleResetPassword = async (email: string, userId: string) => {
+    if (!auth) return;
+    setProcessingId(userId);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({ title: "Reset Link Sent", description: `A password reset link has been sent to ${email}` });
+    } catch (error: any) {
+      toast({ title: "Request Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -104,12 +118,12 @@ export function UserManagement() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400">Set Password</Label>
+              <Label className="text-[10px] font-bold uppercase text-slate-400">Set Initial Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input type="password" placeholder="Min 6 characters" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="pl-9 h-11 rounded-xl" />
               </div>
-              <p className="text-[10px] text-slate-400">Provide this password to the user.</p>
+              <p className="text-[10px] text-slate-400">User should change this after first login.</p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-slate-400">System Role</Label>
@@ -164,7 +178,17 @@ export function UserManagement() {
                         )}>{u.role}</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">{u.email}</TableCell>
-                      <TableCell className="text-right pr-6">
+                      <TableCell className="text-right pr-6 space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-300 hover:text-primary" 
+                          disabled={processingId === u.id}
+                          onClick={() => handleResetPassword(u.email, u.id)}
+                          title="Send Password Reset Link"
+                        >
+                          {processingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(u.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>

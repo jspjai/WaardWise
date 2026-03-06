@@ -3,13 +3,23 @@
 
 import { useState } from "react";
 import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, FileText } from "lucide-react";
+import { ShieldCheck, Mail, Lock, Loader2, AlertCircle, FileText, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginFormProps {
   onShowRequest: () => void;
@@ -17,10 +27,14 @@ interface LoginFormProps {
 
 export function LoginForm({ onShowRequest }: LoginFormProps) {
   const auth = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
   const [error, setError] = useState("");
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +44,27 @@ export function LoginForm({ onShowRequest }: LoginFormProps) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
-      setError("Invalid credentials. Public signup is disabled.");
+      setError("Invalid credentials. Please check your email and password.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!auth || !resetEmail) {
+      toast({ title: "Email Required", description: "Please enter your email address.", variant: "destructive" });
+      return;
+    }
+    setIsResetting(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({ title: "Reset Link Sent", description: "Check your inbox for password recovery instructions." });
+      setIsResetDialogOpen(false);
+      setResetEmail("");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -64,7 +96,37 @@ export function LoginForm({ onShowRequest }: LoginFormProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Password</Label>
+              <div className="flex items-center justify-between px-1">
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Password</Label>
+                <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="text-[10px] font-bold text-primary hover:underline">Forgot Password?</button>
+                  </DialogTrigger>
+                  <DialogContent className="rounded-3xl border-none">
+                    <DialogHeader>
+                      <DialogTitle className="font-headline font-bold">Recover Password</DialogTitle>
+                      <DialogDescription>
+                        Enter the email address associated with your account to receive a reset link.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <Label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Email Address</Label>
+                      <Input 
+                        placeholder="email@example.com" 
+                        value={resetEmail} 
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="h-12 rounded-xl bg-slate-50 border-slate-100"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleForgotPassword} disabled={isResetting} className="w-full h-12 bg-primary rounded-xl font-bold">
+                        {isResetting ? <Loader2 className="animate-spin mr-2" /> : <KeyRound className="w-4 h-4 mr-2" />}
+                        Send Reset Instructions
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="pl-11 h-12 rounded-xl" />
