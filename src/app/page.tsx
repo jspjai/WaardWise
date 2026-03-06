@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Role } from "@/lib/types";
 import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { WardsBooths } from "@/components/admin/WardsBooths";
@@ -17,17 +18,20 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Zap } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
   const db = useFirestore();
+  const { toast } = useToast();
   const [activeView, setActiveView] = useState("");
   const [userRole, setUserRole] = useState<Role | null>(null);
   const [userName, setUserName] = useState("User");
+  const [isPromoting, setIsPromoting] = useState(false);
 
   const adminDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "roles_admin", firebaseUser.uid) : null, [db, firebaseUser]);
   const surveyorDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "surveyors", firebaseUser.uid) : null, [db, firebaseUser]);
@@ -52,6 +56,33 @@ export default function Home() {
       if (!activeView) setActiveView("Ward Market");
     }
   }, [adminData, surveyorData, candidateData, activeView]);
+
+  const handlePromoteToAdmin = async () => {
+    if (!firebaseUser || !db) return;
+    setIsPromoting(true);
+    try {
+      await setDoc(doc(db, "roles_admin", firebaseUser.uid), {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: "Administrator",
+        role: "ADMIN",
+        createdAt: new Date().toISOString()
+      });
+      toast({
+        title: "Admin Role Assigned",
+        description: "Your account has been promoted to Admin. Refreshing...",
+      });
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Promotion Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsPromoting(false);
+    }
+  };
 
   if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
     return (
@@ -79,11 +110,18 @@ export default function Home() {
           <div className="space-y-2">
             <h1 className="text-xl font-headline font-extrabold text-slate-900">Account Pending Assignment</h1>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Your account ({firebaseUser.email}) is active, but hasn't been assigned a system role (Admin, Surveyor, or Candidate). 
-              Please contact your system administrator to gain access.
+              Your account ({firebaseUser.email}) is active, but hasn't been assigned a system role (Admin, Surveyor, or Candidate).
             </p>
           </div>
           <div className="flex flex-col gap-3">
+            <Button 
+              onClick={handlePromoteToAdmin} 
+              disabled={isPromoting}
+              className="bg-primary hover:bg-primary/90 text-white rounded-xl h-12 font-bold shadow-lg shadow-primary/20 gap-2"
+            >
+              {isPromoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-400" />}
+              Initialize Admin Account
+            </Button>
             <Button variant="ghost" onClick={() => { window.location.reload(); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Refresh Status
             </Button>
