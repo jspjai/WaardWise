@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,11 +17,13 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle, Zap, UserPlus } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Zap, UserPlus, LogOut } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase";
 
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
@@ -64,7 +65,7 @@ export default function Home() {
       await setDoc(doc(db, "roles_admin", firebaseUser.uid), {
         id: firebaseUser.uid,
         email: firebaseUser.email,
-        name: "Super Admin",
+        name: firebaseUser.email === 'suryajai642@gmail.com' ? "Super Admin" : "Administrator",
         role: "ADMIN",
         createdAt: new Date().toISOString()
       });
@@ -72,7 +73,7 @@ export default function Home() {
         title: "Admin Role Assigned",
         description: `Account ${firebaseUser.email} has been promoted to Super Admin.`,
       });
-      // Component will re-render and find adminData
+      // The page will re-render and adminData will be populated
     } catch (error: any) {
       toast({
         title: "Promotion Failed",
@@ -81,6 +82,19 @@ export default function Home() {
       });
     } finally {
       setIsPromoting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Logout Error",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -105,7 +119,7 @@ export default function Home() {
     
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 text-center">
-        <div className="max-w-md space-y-6 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50">
+        <div className="max-w-md w-full space-y-6 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50">
           <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500">
             {isTargetUser ? <UserPlus className="w-10 h-10 text-primary" /> : <AlertCircle className="w-10 h-10" />}
           </div>
@@ -114,7 +128,10 @@ export default function Home() {
               {isTargetUser ? "Welcome, Primary Administrator" : "Account Pending Assignment"}
             </h1>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Your account ({firebaseUser.email}) is active, but hasn't been assigned a role in the live database.
+              Account: <span className="font-bold text-slate-700">{firebaseUser.email}</span>
+            </p>
+            <p className="text-xs text-slate-400 italic">
+              Your account is active, but you don't have a role in the live database.
             </p>
           </div>
           <div className="flex flex-col gap-3">
@@ -126,9 +143,15 @@ export default function Home() {
               {isPromoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-400" />}
               {isTargetUser ? "Authorize Super Admin Role" : "Initialize Admin Account"}
             </Button>
-            <Button variant="ghost" onClick={() => { window.location.reload(); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              Refresh Status
-            </Button>
+            <div className="flex gap-2">
+               <Button variant="ghost" onClick={() => { window.location.reload(); }} className="flex-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest h-10">
+                Refresh Status
+              </Button>
+               <Button variant="ghost" onClick={handleLogout} className="flex-1 text-[10px] font-bold text-red-400 hover:text-red-500 hover:bg-red-50 uppercase tracking-widest h-10">
+                <LogOut className="w-3 h-3 mr-1" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>

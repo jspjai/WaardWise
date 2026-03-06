@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -62,7 +61,6 @@ export function AdminSettings() {
           id: "ward-80", 
           name: "Indiranagar", 
           district: "Bengaluru Central", 
-          booths: 24, 
           surveyCount: 1240,
           price: 5000,
           isAvailableForPurchase: true,
@@ -73,7 +71,6 @@ export function AdminSettings() {
           id: "ward-81", 
           name: "Malleshwaram", 
           district: "Bengaluru North", 
-          booths: 18, 
           surveyCount: 890,
           price: 4500,
           isAvailableForPurchase: true,
@@ -84,7 +81,6 @@ export function AdminSettings() {
           id: "ward-82", 
           name: "HSR Layout", 
           district: "Bengaluru South", 
-          booths: 30, 
           surveyCount: 2100,
           price: 6000,
           isAvailableForPurchase: true,
