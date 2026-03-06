@@ -1,9 +1,8 @@
-
 "use client";
 
-import { useState } from "react";
-import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, doc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -15,8 +14,6 @@ import {
   ChevronRight, 
   ChevronLeft, 
   CheckCircle2, 
-  AlertCircle,
-  AlertTriangle,
   FileText,
   Sparkles,
   Loader2,
@@ -56,8 +53,17 @@ export function SurveyForm() {
     ageGroup: "26–40",
     householdVoterMood: "Neutral",
     topIssue: "",
-    notes: ""
+    notes: "",
+    surveyDate: "" // Initialize as empty for hydration safety
   });
+
+  useEffect(() => {
+    // Set dynamic values only on the client after mount to avoid hydration mismatch
+    setFormData(prev => ({
+      ...prev,
+      surveyDate: new Date().toISOString()
+    }));
+  }, []);
   
   const totalSteps = SECTIONS.length;
   const progress = (step / totalSteps) * 100;
@@ -98,11 +104,10 @@ export function SurveyForm() {
     const surveyPayload = {
       ...formData,
       surveyorId: user.uid,
-      surveyDate: new Date().toISOString(),
+      surveyDate: formData.surveyDate || new Date().toISOString(),
       submissionTimestamp: new Date().toISOString(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      // Defaulting multi-selects and complex types for prototype completeness
       socialNetworkAffiliations: [],
       leadershipQualities: [],
       yearsLivingInArea: "10+",

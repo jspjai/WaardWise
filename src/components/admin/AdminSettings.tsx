@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -30,6 +29,7 @@ import {
   UserPlus,
   ArrowRight,
   ShieldAlert,
+  ShieldCheck,
   Fingerprint
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,6 @@ export function AdminSettings() {
     setIsVerifying(true);
     setSecurityStatus("IDLE");
     try {
-      // Attempt to read the user's own admin doc to verify rules
       const docRef = doc(db, "roles_admin", user.uid);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
@@ -89,7 +88,6 @@ export function AdminSettings() {
     try {
       const batch = writeBatch(db);
 
-      // 1. Ensure current user is an admin
       batch.set(doc(db, "roles_admin", user.uid), {
         id: user.uid,
         email: user.email,
@@ -99,7 +97,6 @@ export function AdminSettings() {
         updatedAt: new Date().toISOString()
       });
 
-      // 2. Seed Sample Wards
       const wards = [
         { id: "ward-80", name: "Indiranagar", district: "Bengaluru Central", surveyCount: 1240, price: 5000, isAvailableForPurchase: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
         { id: "ward-81", name: "Malleshwaram", district: "Bengaluru North", surveyCount: 890, price: 4500, isAvailableForPurchase: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -137,7 +134,6 @@ export function AdminSettings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Internal Navigation Sidebar */}
         <div className="lg:col-span-1 space-y-1.5">
           {navItems.map((item) => (
             <button
@@ -159,7 +155,6 @@ export function AdminSettings() {
           ))}
         </div>
 
-        {/* Content Area */}
         <div className="lg:col-span-3 space-y-6">
           {activeTab === "general" && (
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
@@ -318,7 +313,7 @@ export function AdminSettings() {
                               <h4 className="font-bold text-slate-900">Identity Guard</h4>
                            </div>
                            <p className="text-xs text-slate-500 leading-relaxed">
-                              Your account session is protected by Firebase Authentication. Multi-factor authentication is recommended for Super Admins.
+                              Your account session is protected by Firebase Authentication.
                            </p>
                            <Button variant="outline" className="w-full h-10 rounded-xl text-xs font-bold border-slate-200" onClick={() => toast({ title: "Redirecting", description: "Manage identity settings in Firebase Console." })}>
                               Configure Identity
@@ -341,6 +336,17 @@ export function AdminSettings() {
                               Verify Permissions
                            </Button>
                         </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                        <Button variant="ghost" className="h-12 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 justify-start px-4" onClick={() => setActiveTab("admins")}>
+                           <UserCheck className="w-4 h-4 mr-3 text-primary" />
+                           Manage Administrators
+                        </Button>
+                        <Button variant="ghost" className="h-12 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 justify-start px-4" onClick={() => setActiveTab("logs")}>
+                           <History className="w-4 h-4 mr-3 text-emerald-500" />
+                           View System Logs
+                        </Button>
                      </div>
 
                      {securityStatus === "SUCCESS" && (
@@ -375,20 +381,9 @@ export function AdminSettings() {
               </CardHeader>
               <CardContent className="p-8 pt-4 space-y-6">
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Executing this operation will create the mandatory **Wards**, **Booths**, and **Admin Roles** required for the marketplace and analytics dashboards to function. It uses a non-destructive atomic write batch.
+                  Executing this operation will create the mandatory **Wards**, **Booths**, and **Admin Roles**.
                 </p>
                 
-                <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-2">
-                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                      <span>Records to Create</span>
-                      <span>Estimated Time</span>
-                   </div>
-                   <div className="flex justify-between text-xs font-bold text-white">
-                      <span>42 Collection Items</span>
-                      <span className="text-amber-400">~2.4s</span>
-                   </div>
-                </div>
-
                 <Button 
                   onClick={handleBootstrap}
                   disabled={isBootstrapping}

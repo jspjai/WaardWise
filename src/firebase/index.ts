@@ -7,15 +7,21 @@ import { getFirestore } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
+  if (typeof window === 'undefined') {
+    // Return empty placeholders for server-side execution to prevent crashes
+    return {
+      firebaseApp: null as any as FirebaseApp,
+      auth: null as any as any,
+      firestore: null as any as any
+    };
+  }
+
   if (!getApps().length) {
     let firebaseApp;
     try {
       // Attempt to initialize via Firebase App Hosting environment variables
       firebaseApp = initializeApp();
     } catch (e) {
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
       firebaseApp = initializeApp(firebaseConfig);
     }
 
@@ -32,11 +38,6 @@ export function getSdks(firebaseApp: FirebaseApp) {
     firestore: getFirestore(firebaseApp)
   };
 }
-
-// Initialize and export SDK singletons for direct import in components
-const sdks = initializeFirebase();
-export const auth = sdks.auth;
-export const db = sdks.firestore;
 
 export * from './provider';
 export * from './client-provider';

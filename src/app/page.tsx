@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { Role } from "@/lib/types";
-import { useUser, useFirestore, useMemoFirebase, useDoc, auth } from "@/firebase";
+import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
@@ -18,7 +17,7 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle, Zap, UserPlus, LogOut } from "lucide-react";
+import { Loader2, AlertCircle, Zap, UserPlus, LogOut } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,15 +27,17 @@ import { signOut } from "firebase/auth";
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
   const db = useFirestore();
+  const auth = useAuth();
   const { toast } = useToast();
   const [activeView, setActiveView] = useState("");
   const [userRole, setUserRole] = useState<Role | null>(null);
   const [userName, setUserName] = useState("User");
   const [isPromoting, setIsPromoting] = useState(false);
 
-  const adminDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "roles_admin", firebaseUser.uid) : null, [db, firebaseUser]);
-  const surveyorDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "surveyors", firebaseUser.uid) : null, [db, firebaseUser]);
-  const candidateDocRef = useMemoFirebase(() => firebaseUser ? doc(db, "candidates", firebaseUser.uid) : null, [db, firebaseUser]);
+  // Memoize refs safely with null checks for SSR/initial hydration
+  const adminDocRef = useMemoFirebase(() => (firebaseUser && db) ? doc(db, "roles_admin", firebaseUser.uid) : null, [db, firebaseUser]);
+  const surveyorDocRef = useMemoFirebase(() => (firebaseUser && db) ? doc(db, "surveyors", firebaseUser.uid) : null, [db, firebaseUser]);
+  const candidateDocRef = useMemoFirebase(() => (firebaseUser && db) ? doc(db, "candidates", firebaseUser.uid) : null, [db, firebaseUser]);
 
   const { data: adminData, isLoading: isAdminLoading } = useDoc(adminDocRef);
   const { data: surveyorData, isLoading: isSurveyorLoading } = useDoc(surveyorDocRef);
@@ -86,6 +87,7 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
       window.location.reload();
@@ -98,7 +100,7 @@ export default function Home() {
     }
   };
 
-  if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading))) {
+  if (isUserLoading || (firebaseUser && (isAdminLoading && isSurveyorLoading && isCandidateLoading)) || !db) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4">
