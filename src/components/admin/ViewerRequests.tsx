@@ -2,21 +2,35 @@
 "use client";
 
 import { useState } from "react";
-import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary } from "@/firebase";
-import { collection, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, doc, updateDoc } from "firebase/firestore";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Loader2, Mail, Trash2, UserPlus, Clock } from "lucide-react";
+import { XCircle, Loader2, Mail, Trash2, UserPlus, Clock, AlertTriangle } from "lucide-react";
 import { ViewerRequest } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function ViewerRequests() {
   const db = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  
+  // Delete State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<ViewerRequest | null>(null);
 
   const requestsQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -36,7 +50,7 @@ export function ViewerRequests() {
       const uid = await createAuthAccountSecondary(req.email, req.password);
       
       // 2. Create User Profile
-      await setDoc(doc(db, "users", uid), {
+      await updateDoc(doc(db, "users", uid), {
         id: uid,
         name: req.name,
         email: req.email,
@@ -57,6 +71,7 @@ export function ViewerRequests() {
   };
 
   const handleReject = async (id: string) => {
+    if (!db) return;
     try {
       await updateDoc(doc(db, "viewer_requests", id), { status: 'REJECTED' });
       toast({ title: "Request Rejected" });
@@ -65,14 +80,20 @@ export function ViewerRequests() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this request history?")) return;
-    try {
-      await deleteDoc(doc(db, "viewer_requests", id));
-      toast({ title: "Request Deleted" });
-    } catch (error) {
-      toast({ title: "Delete Failed", variant: "destructive" });
-    }
+  const triggerDelete = (req: ViewerRequest) => {
+    setRequestToDelete(req);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!db || !requestToDelete) return;
+    
+    const docRef = doc(db, "viewer_requests", requestToDelete.id);
+    deleteDocumentNonBlocking(docRef);
+    
+    toast({ title: "Request Removed", description: "The application history has been deleted." });
+    setDeleteDialogOpen(false);
+    setRequestToDelete(null);
   };
 
   return (
@@ -154,7 +175,12 @@ export function ViewerRequests() {
                           </span>
                         </div>
                       )}
-                      <Button size="icon" variant="ghost" className="h-9 w-9 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(req.id)}>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-9 w-9 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onClick={() => triggerDelete(req)}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -172,6 +198,32 @@ export function ViewerRequests() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              Remove Access Request?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-sm">
+              Are you sure you want to delete the request from <strong>{requestToDelete?.name}</strong>? 
+              This will remove their application history permanently.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="rounded-xl h-12 font-bold border-slate-100">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="rounded-xl h-12 px-8 font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg shadow-rose-100"
+            >
+              <Trash2 className="mr-2 w-4 h-4" />
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
