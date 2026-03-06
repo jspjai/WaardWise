@@ -22,19 +22,47 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield, Loader2, Search, Lock, Mail, User, KeyRound } from "lucide-react";
+import { UserPlus, Trash2, Shield, Loader2, Search, Lock, Mail, User, KeyRound, AlertTriangle } from "lucide-react";
 import { Role, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function UserManagement() {
   const db = useFirestore();
   const auth = useAuth();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
+  
+  // Creation state
   const [isAdding, setIsAdding] = useState(false);
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: 'SURVEYOR' as Role });
+
+  // Reset Password state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [userToReset, setUserToReset] = useState<UserProfile | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const usersQuery = useMemoFirebase(() => {
     if (!db) return null;
@@ -73,38 +101,34 @@ export function UserManagement() {
     }
   };
 
-  const handleResetPassword = async (email: string, userId: string) => {
-    if (!auth) {
-      toast({ title: "Error", description: "Authentication service not initialized.", variant: "destructive" });
-      return;
-    }
-    setProcessingId(userId);
+  const handleConfirmReset = async () => {
+    if (!auth || !userToReset) return;
+    
+    setIsResetting(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, userToReset.email);
       toast({ 
         title: "Reset Link Sent", 
-        description: `A password reset email has been sent to ${email}.` 
+        description: `A password reset instructions have been sent to ${userToReset.email}.` 
       });
+      setResetDialogOpen(false);
     } catch (error: any) {
       toast({ title: "Request Failed", description: error.message, variant: "destructive" });
     } finally {
-      setProcessingId(null);
+      setIsResetting(false);
+      setUserToReset(null);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!db) return;
-    if (id === currentUser?.uid) {
-      toast({ title: "Action Restricted", description: "You cannot remove your own administrative access.", variant: "destructive" });
-      return;
-    }
-    if (!confirm("Are you sure you want to revoke access for this user? This action will permanently remove their profile.")) return;
+  const handleConfirmDelete = async () => {
+    if (!db || !userToDelete) return;
     
-    setDeletingId(id);
-    const userDocRef = doc(db, "users", id);
+    setIsDeleting(true);
+    const userDocRef = doc(db, "users", userToDelete.id);
     try {
       await deleteDoc(userDocRef);
       toast({ title: "Access Revoked", description: "The user profile has been successfully deleted." });
+      setDeleteDialogOpen(false);
     } catch (serverError: any) {
       const permissionError = new FirestorePermissionError({
         path: userDocRef.path,
@@ -112,8 +136,23 @@ export function UserManagement() {
       });
       errorEmitter.emit('permission-error', permissionError);
     } finally {
-      setDeletingId(null);
+      setIsDeleting(false);
+      setUserToDelete(null);
     }
+  };
+
+  const triggerReset = (user: UserProfile) => {
+    setUserToReset(user);
+    setResetDialogOpen(true);
+  };
+
+  const triggerDelete = (user: UserProfile) => {
+    if (user.id === currentUser?.uid) {
+      toast({ title: "Action Restricted", description: "You cannot remove your own administrative access.", variant: "destructive" });
+      return;
+    }
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -213,11 +252,10 @@ export function UserManagement() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-slate-400 hover:text-primary transition-colors" 
-                          disabled={processingId === u.id}
-                          onClick={() => handleResetPassword(u.email, u.id)}
+                          onClick={() => triggerReset(u)}
                           title="Reset Password"
                         >
-                          {processingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                          <KeyRound className="w-4 h-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -226,11 +264,10 @@ export function UserManagement() {
                             "h-8 w-8 transition-colors",
                             u.id === currentUser?.uid ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-red-500"
                           )}
-                          disabled={deletingId === u.id || u.id === currentUser?.uid}
-                          onClick={() => handleDelete(u.id)}
+                          onClick={() => triggerDelete(u)}
                           title={u.id === currentUser?.uid ? "Cannot delete yourself" : "Delete User"}
                         >
-                          {deletingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -246,6 +283,60 @@ export function UserManagement() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Reset Password Confirmation Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="rounded-3xl border-none">
+          <DialogHeader>
+            <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 text-sm">
+              This will send a secure password reset link to <strong>{userToReset?.email}</strong>. The user will be able to set their own new password safely.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setResetDialogOpen(false)} className="rounded-xl h-12 font-bold">Cancel</Button>
+            <Button 
+              onClick={handleConfirmReset} 
+              disabled={isResetting}
+              className="bg-primary rounded-xl h-12 px-8 font-bold shadow-lg shadow-primary/10"
+            >
+              {isResetting ? <Loader2 className="animate-spin mr-2" /> : <Mail className="mr-2 w-4 h-4" />}
+              Send Reset Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Alert Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              Revoke System Access?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-sm">
+              Are you sure you want to permanently delete the account for <strong>{userToDelete?.name}</strong>? 
+              This action cannot be undone and they will immediately lose access to the portal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="rounded-xl h-12 font-bold border-slate-100">Cancel</AlertDialogCancel>
+            <Button 
+              onClick={handleConfirmDelete} 
+              disabled={isDeleting}
+              variant="destructive"
+              className="rounded-xl h-12 px-8 font-bold shadow-lg shadow-rose-100"
+            >
+              {isDeleting ? <Loader2 className="animate-spin mr-2" /> : <Trash2 className="mr-2 w-4 h-4" />}
+              Confirm Deletion
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
