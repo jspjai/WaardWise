@@ -1,4 +1,3 @@
-
 "use client";
 
 import { signOut } from "firebase/auth";
@@ -68,9 +67,8 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
       await signOut(auth);
       toast({
         title: "Logged Out",
-        description: "You have been successfully signed out.",
+        description: "Your session has been securely ended.",
       });
-      // Optionally redirect or force reload
       window.location.reload();
     } catch (error: any) {
       toast({
@@ -104,18 +102,17 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
               {currentItems.map((item) => (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton 
-                    asChild 
                     isActive={activeView === item.name}
                     className="group"
                     onClick={() => onViewChange(item.name)}
                   >
-                    <button className="flex items-center justify-between w-full text-left">
+                    <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
                         <item.icon className="w-4 h-4" />
                         <span className="font-medium">{item.name}</span>
                       </div>
                       {activeView === item.name && <ChevronRight className="w-3 h-3 opacity-50" />}
-                    </button>
+                    </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -126,8 +123,8 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
 
       <SidebarFooter className="p-4 border-t border-slate-50">
         <div className="flex items-center gap-3 px-1 py-2 mb-4">
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-[10px]">
-            {userName.charAt(0).toUpperCase()}
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-[10px] uppercase">
+            {userName.charAt(0)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold truncate text-slate-900">{userName}</p>

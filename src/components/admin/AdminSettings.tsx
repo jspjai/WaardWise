@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useFirestore, useUser } from "@/firebase";
-import { doc, setDoc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
@@ -221,41 +221,50 @@ export function AdminSettings() {
             </Card>
           )}
 
-          {activeTab !== "data" && (
+          {activeTab === "security" && (
+             <div className="space-y-6">
+               <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                  <CardHeader className="border-b border-slate-50 p-6">
+                    <CardTitle className="text-lg font-headline font-bold">Access Controls</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 flex flex-col gap-4">
+                    <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
+                        <Lock className="w-5 h-5 mr-3 text-primary" />
+                        Audit Logs
+                    </Button>
+                    <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
+                        <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
+                        Manage Admins
+                    </Button>
+                  </CardContent>
+               </Card>
+               <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl flex items-start gap-4">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                  <div>
+                     <h4 className="font-bold text-emerald-900">Security Rules Active</h4>
+                     <p className="text-sm text-emerald-700 mt-1 leading-relaxed">
+                        Your Firestore database is protected by production-grade security rules. Only authorized admins and assigned staff can modify data.
+                     </p>
+                  </div>
+               </div>
+             </div>
+          )}
+
+          {activeTab !== "data" && activeTab !== "security" && (
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-slate-50 p-6">
                 <CardTitle className="text-lg font-headline font-bold">System Actions</CardTitle>
               </CardHeader>
-              <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
-                    <Lock className="w-5 h-5 mr-3 text-primary" />
-                    Audit Logs
-                 </Button>
-                 <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
-                    <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
-                    Manage Admins
-                 </Button>
+              <CardContent className="p-6">
                  <Button 
                     onClick={handleSaveConfig}
-                    className="col-span-1 sm:col-span-2 h-16 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01]"
+                    className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-white shadow-lg shadow-primary/20 transition-all"
                  >
                     <Save className="w-5 h-5 mr-3" />
-                    Save Global Configuration
+                    Save Configuration
                  </Button>
               </CardContent>
             </Card>
-          )}
-
-          {activeTab === "security" && (
-             <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl flex items-start gap-4">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                <div>
-                   <h4 className="font-bold text-emerald-900">Security Rules Active</h4>
-                   <p className="text-sm text-emerald-700 mt-1 leading-relaxed">
-                      Your Firestore database is protected by production-grade security rules. Only authorized admins and assigned staff can modify data.
-                   </p>
-                </div>
-             </div>
           )}
         </div>
       </div>

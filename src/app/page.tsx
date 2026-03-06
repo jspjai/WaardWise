@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Role } from "@/lib/types";
-import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { useUser, useFirestore, useMemoFirebase, useDoc, auth } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
@@ -23,7 +23,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { signOut } from "firebase/auth";
-import { auth } from "@/firebase";
 
 export default function Home() {
   const { user: firebaseUser, isUserLoading } = useUser();
@@ -71,9 +70,9 @@ export default function Home() {
       });
       toast({
         title: "Admin Role Assigned",
-        description: `Account ${firebaseUser.email} has been promoted to Super Admin.`,
+        description: `Account ${firebaseUser.email} has been promoted to Admin.`,
       });
-      // The page will re-render and adminData will be populated
+      // Component will re-render and adminData will trigger role switch
     } catch (error: any) {
       toast({
         title: "Promotion Failed",
@@ -113,7 +112,6 @@ export default function Home() {
     return <LoginForm />;
   }
 
-  // Handle users who are logged in but have no role defined yet in Firestore
   if (!userRole && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
     const isTargetUser = firebaseUser.email === 'suryajai642@gmail.com';
     
@@ -128,7 +126,7 @@ export default function Home() {
               {isTargetUser ? "Welcome, Primary Administrator" : "Account Pending Assignment"}
             </h1>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Account: <span className="font-bold text-slate-700">{firebaseUser.email}</span>
+              Logged in as: <span className="font-bold text-slate-700">{firebaseUser.email}</span>
             </p>
             <p className="text-xs text-slate-400 italic">
               Your account is active, but you don't have a role in the live database.
@@ -206,11 +204,6 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center text-white shadow-md sm:hidden">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-extrabold text-slate-900 tracking-tight sm:hidden">TRS Group</span>
-                
                 <div className="hidden sm:flex items-center gap-4 border-l pl-4 border-slate-100 ml-2">
                    <div className="flex items-center gap-2">
                     <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Secure Connection</span>
@@ -227,8 +220,8 @@ export default function Home() {
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">System Nominal</span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold text-xs">
-                {userName.charAt(0).toUpperCase()}
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold text-xs uppercase">
+                {userName.charAt(0)}
               </div>
             </div>
           </header>
