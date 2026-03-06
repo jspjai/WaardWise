@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   UserCircle,
   FileText,
-  Key
+  Key,
+  MessageSquare
 } from "lucide-react";
 import { Role } from "@/lib/types";
 import {
@@ -50,6 +51,7 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
       { name: "Dashboard", icon: LayoutDashboard },
       { name: "User Management", icon: Users },
       { name: "Viewer Requests", icon: Key },
+      { name: "Tickets", icon: MessageSquare },
       { name: "Wards & Booths", icon: Map },
     ],
     SURVEYOR: [

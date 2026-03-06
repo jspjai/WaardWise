@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { ViewerRequests } from "@/components/admin/ViewerRequests";
+import { TicketsManagement } from "@/components/admin/TicketsManagement";
 import { SurveyForm } from "@/components/survey/SurveyForm";
 import { SurveyorSubmissions } from "@/components/survey/SurveyorSubmissions";
 import { ViewerDashboard } from "@/components/viewer/ViewerDashboard";
@@ -109,10 +110,11 @@ export default function Home() {
       case "Dashboard": return <AdminDashboard />;
       case "User Management": return <UserManagement />;
       case "Viewer Requests": return <ViewerRequests />;
+      case "Tickets": return <TicketsManagement />;
       case "New Survey": return <SurveyForm onNavigate={setActiveView} />;
       case "My Surveys": return <SurveyorSubmissions />;
       case "Assigned Data": return <ViewerDashboard />;
-      default: return <div className="p-12 text-center text-slate-400 font-bold">SELECT A VIEW</div>;
+      default: return <div className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest">Select a view from the sidebar</div>;
     }
   };
 
@@ -130,12 +132,12 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="flex items-center gap-2 border-l pl-4">
-                <Badge variant="outline" className="text-[10px] border-emerald-100 text-emerald-600 bg-emerald-50">PORTAL LIVE</Badge>
+                <Badge variant="outline" className="text-[10px] border-emerald-100 text-emerald-600 bg-emerald-50 uppercase font-black">Portal Live</Badge>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-500">{userData?.email}</span>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
                 {userData?.name?.charAt(0)}
               </div>
             </div>

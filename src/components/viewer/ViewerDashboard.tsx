@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,18 +23,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export function ViewerDashboard() {
-  const { user } = userUser(); // Correcting user hook usage
+  const { user } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   const [assignedSurveys, setAssignedSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Support Dialog State
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
 
-  // 1. Get Access Mappings for this viewer
   const accessQuery = useMemoFirebase(() => {
     if (!user || !db) return null;
     return query(collection(db, "survey_access"), where("viewerId", "==", user.uid));
@@ -41,7 +40,6 @@ export function ViewerDashboard() {
 
   const { data: accessMappings, isLoading: isAccessLoading } = useCollection<SurveyAccess>(accessQuery);
 
-  // 2. Fetch Actual Surveys based on mappings
   useEffect(() => {
     if (!db || isAccessLoading) return;
 
@@ -79,20 +77,35 @@ export function ViewerDashboard() {
     fetchSurveys();
   }, [accessMappings, isAccessLoading, db]);
 
-  const handleSendSupport = () => {
-    if (!supportMessage.trim()) return;
+  const handleSendSupport = async () => {
+    if (!supportMessage.trim() || !user || !db) return;
     setIsSending(true);
     
-    // Simulate sending support request
-    setTimeout(() => {
-      setIsSending(false);
+    try {
+      await addDoc(collection(db, "support_tickets"), {
+        viewerId: user.uid,
+        viewerName: user.displayName || "Authorized Viewer",
+        viewerEmail: user.email,
+        message: supportMessage,
+        status: 'OPEN',
+        createdAt: new Date().toISOString()
+      });
+
+      toast({
+        title: "Ticket Created",
+        description: "Your request has been routed to the administrative team.",
+      });
       setIsSupportOpen(false);
       setSupportMessage("");
+    } catch (error: any) {
       toast({
-        title: "Request Sent",
-        description: "Our analysts have received your request and will contact you shortly.",
+        title: "Submission Failed",
+        description: error.message,
+        variant: "destructive"
       });
-    }, 1500);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (loading || isAccessLoading) {
@@ -215,10 +228,4 @@ export function ViewerDashboard() {
       </Card>
     </div>
   );
-}
-
-// Fixed the useUser hook call in a local scope helper or re-importing correctly
-function userUser() {
-  const { user, isUserLoading, userError } = useUser();
-  return { user, isUserLoading, userError };
 }

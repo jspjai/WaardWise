@@ -25,7 +25,7 @@ export interface ViewerRequest {
   name: string;
   company: string;
   email: string;
-  password?: string; // Stored temporarily for account creation upon approval
+  password?: string;
   phone: string;
   surveyRequested: string;
   purpose: string;
@@ -39,4 +39,14 @@ export interface SurveyAccess {
   surveyId: string;
   assignedAt: string;
   expiryDate?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  viewerId: string;
+  viewerName: string;
+  viewerEmail: string;
+  message: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  createdAt: string;
 }

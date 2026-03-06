@@ -52,6 +52,20 @@
         "expiryDate": { "type": "string", "format": "date-time" }
       },
       "required": ["viewerId", "surveyId"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "viewerId": { "type": "string" },
+        "viewerName": { "type": "string" },
+        "viewerEmail": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["viewerId", "message", "status", "createdAt"]
     }
   },
   "auth": {
@@ -73,6 +87,10 @@
     "/survey_access/{accessId}": {
       "schema": "SurveyAccess",
       "description": "Mapping of viewers to specific survey datasets."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Support requests and inquiries from viewers."
     }
   }
 }

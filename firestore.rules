@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -6,7 +7,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Safer admin check that handles missing user documents gracefully
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'suryajai642@gmail.com' ||
@@ -27,13 +27,11 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'VIEWER';
     }
 
-    // --- Users Collection ---
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow write: if isAdmin() || request.auth.token.email == 'suryajai642@gmail.com';
     }
 
-    // --- Surveys Collection ---
     match /surveys/{surveyId} {
       allow read: if isAdmin() || 
                   (isSurveyor() && resource.data.surveyorId == request.auth.uid) ||
@@ -42,39 +40,26 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isSurveyor() && resource.data.surveyorId == request.auth.uid);
     }
 
-    // --- Viewer Requests ---
     match /viewer_requests/{requestId} {
       allow create: if true; 
       allow read, write: if isAdmin();
     }
 
-    // --- Survey Access Mapping ---
     match /survey_access/{accessId} {
-      // FIX: Allow viewers to read their own mappings so dashboard can resolve surveys
       allow read: if isAdmin() || (isSignedIn() && (resource.data.viewerId == request.auth.uid || accessId.startsWith(request.auth.uid)));
       allow write: if isAdmin();
     }
 
-    // --- Roles Collections ---
-    match /roles_admin/{adminId} {
-      allow read, write: if isAdmin();
-    }
-    
-    match /surveyors/{surveyorId} {
-      allow read, write: if isAdmin();
+    match /support_tickets/{ticketId} {
+      allow create: if isViewer();
+      allow read, write: if isAdmin() || (isSignedIn() && resource.data.viewerId == request.auth.uid);
     }
 
-    match /candidates/{candidateId} {
-      allow read, write: if isAdmin();
-    }
-
-    // --- Wards Collection ---
     match /wards/{wardId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // --- Settings Collection ---
     match /settings/{settingId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
