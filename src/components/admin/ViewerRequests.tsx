@@ -22,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export function ViewerRequests() {
   const db = useFirestore();
@@ -39,10 +41,15 @@ export function ViewerRequests() {
   const { data: requests, isLoading } = useCollection<ViewerRequest>(requestsQuery);
 
   const handleApproveAndCreate = async (req: ViewerRequest) => {
-    if (!db || !req.email || !req.password) {
+    if (!db || !req.email) {
+      toast({ title: "Validation Error", description: "Email is required.", variant: "destructive" });
+      return;
+    }
+
+    if (!req.password) {
       toast({ 
-        title: "Cannot Approve", 
-        description: "Request is missing email or password data.", 
+        title: "Missing Credentials", 
+        description: "This request does not contain a password. Please contact the applicant or create the account manually in User Management.", 
         variant: "destructive" 
       });
       return;
@@ -53,28 +60,31 @@ export function ViewerRequests() {
       // 1. Create Auth Account using stored password
       const uid = await createAuthAccountSecondary(req.email, req.password);
       
-      // 2. Create User Profile (MUST use setDoc because document doesn't exist yet)
-      await setDoc(doc(db, "users", uid), {
+      // 2. Create User Profile
+      const userDocRef = doc(db, "users", uid);
+      const userData = {
         id: uid,
         name: req.name,
         email: req.email,
         role: "VIEWER",
         status: "ACTIVE",
         createdAt: new Date().toISOString()
-      });
+      };
+
+      await setDoc(userDocRef, userData);
 
       // 3. Mark Request as Approved
-      await updateDoc(doc(db, "viewer_requests", req.id), { status: 'APPROVED' });
+      const reqDocRef = doc(db, "viewer_requests", req.id);
+      await updateDoc(reqDocRef, { status: 'APPROVED' });
       
       toast({ title: "Account Created", description: `Viewer account for ${req.name} is now active.` });
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         toast({ 
           title: "Email Already Exists", 
-          description: "An account with this email already exists in the system. Use User Management to modify existing roles.", 
+          description: "An account with this email already exists. Mark the request as handled manually.", 
           variant: "destructive" 
         });
-        // Optionally mark request as rejected or manually handled
       } else {
         toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
       }
@@ -85,11 +95,16 @@ export function ViewerRequests() {
 
   const handleReject = async (id: string) => {
     if (!db) return;
+    const docRef = doc(db, "viewer_requests", id);
     try {
-      await updateDoc(doc(db, "viewer_requests", id), { status: 'REJECTED' });
+      await updateDoc(docRef, { status: 'REJECTED' });
       toast({ title: "Request Rejected" });
-    } catch (error: any) {
-      toast({ title: "Reject Failed", description: error.message, variant: "destructive" });
+    } catch (serverError: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: { status: 'REJECTED' }
+      }));
     }
   };
 
@@ -100,11 +115,9 @@ export function ViewerRequests() {
 
   const handleConfirmDelete = () => {
     if (!db || !requestToDelete) return;
-    
     const docRef = doc(db, "viewer_requests", requestToDelete.id);
     deleteDocumentNonBlocking(docRef);
-    
-    toast({ title: "Request Removed", description: "The application history has been deleted." });
+    toast({ title: "Request Removed", description: "Application history deleted." });
     setDeleteDialogOpen(false);
     setRequestToDelete(null);
   };
