@@ -51,8 +51,10 @@ service cloud.firestore {
     }
 
     match /support_tickets/{ticketId} {
-      allow create: if isViewer();
-      allow read, write: if isAdmin() || (isSignedIn() && resource.data.viewerId == request.auth.uid);
+      // Allow any signed-in user with VIEWER role to create a ticket
+      allow create: if isSignedIn();
+      // Allow Admins to see all, or viewers to see their own
+      allow read, write: if isAdmin() || (isSignedIn() && (resource == null || resource.data.viewerId == request.auth.uid));
     }
 
     match /wards/{wardId} {

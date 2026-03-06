@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageSquare, CheckCircle, Clock, ExternalLink } from "lucide-react";
+import { Loader2, MessageSquare, CheckCircle, Clock } from "lucide-react";
 import { SupportTicket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -71,7 +71,7 @@ export function TicketsManagement() {
                         <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{ticket.message}</p>
                         <p className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
-                          {new Date(ticket.createdAt).toLocaleString()}
+                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}
                         </p>
                       </div>
                     </TableCell>
