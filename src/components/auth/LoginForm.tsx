@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -38,7 +37,10 @@ export function LoginForm({ onShowRequest }: LoginFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!auth) {
+      toast({ title: "System Readying", description: "Firebase is initializing, please try again in a second." });
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -51,7 +53,11 @@ export function LoginForm({ onShowRequest }: LoginFormProps) {
   };
 
   const handleForgotPassword = async () => {
-    if (!auth || !resetEmail) {
+    if (!auth) {
+      toast({ title: "Error", description: "Auth service not ready.", variant: "destructive" });
+      return;
+    }
+    if (!resetEmail) {
       toast({ title: "Email Required", description: "Please enter your email address.", variant: "destructive" });
       return;
     }
@@ -62,7 +68,7 @@ export function LoginForm({ onShowRequest }: LoginFormProps) {
       setIsResetDialogOpen(false);
       setResetEmail("");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Reset Failed", description: err.message, variant: "destructive" });
     } finally {
       setIsResetting(false);
     }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -63,7 +62,10 @@ export function UserManagement() {
   };
 
   const handleResetPassword = async (email: string, userId: string) => {
-    if (!auth) return;
+    if (!auth) {
+      toast({ title: "Error", description: "Auth service not ready.", variant: "destructive" });
+      return;
+    }
     setProcessingId(userId);
     try {
       await sendPasswordResetEmail(auth, email);
@@ -77,6 +79,7 @@ export function UserManagement() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Revoke all access for this user? Note: This only deletes the profile record, not the Auth account.")) return;
+    if (!db) return;
     try {
       await deleteDoc(doc(db, "users", id));
       toast({ title: "User Access Revoked" });
@@ -173,8 +176,8 @@ export function UserManagement() {
                       <TableCell>
                         <Badge className={cn(
                           "uppercase text-[9px] font-black tracking-widest px-2",
-                          u.role === 'ADMIN' ? 'bg-indigo-500' : 
-                          u.role === 'SURVEYOR' ? 'bg-emerald-500' : 'bg-slate-500'
+                          u.role === 'ADMIN' ? 'bg-indigo-500 text-white' : 
+                          u.role === 'SURVEYOR' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'
                         )}>{u.role}</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">{u.email}</TableCell>
