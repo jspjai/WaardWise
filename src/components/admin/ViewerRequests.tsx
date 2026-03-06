@@ -68,8 +68,16 @@ export function ViewerRequests() {
       
       toast({ title: "Account Created", description: `Viewer account for ${req.name} is now active.` });
     } catch (error: any) {
-      console.error("Approval Error:", error);
-      toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+      if (error.code === 'auth/email-already-in-use') {
+        toast({ 
+          title: "Email Already Exists", 
+          description: "An account with this email already exists in the system. Use User Management to modify existing roles.", 
+          variant: "destructive" 
+        });
+        // Optionally mark request as rejected or manually handled
+      } else {
+        toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+      }
     } finally {
       setProcessingId(null);
     }

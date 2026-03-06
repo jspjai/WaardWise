@@ -95,7 +95,15 @@ export function UserManagement() {
       });
       setNewUser({ name: "", email: "", password: "", role: 'SURVEYOR' });
     } catch (error: any) {
-      toast({ title: "Creation Failed", description: error.message, variant: "destructive" });
+      if (error.code === 'auth/email-already-in-use') {
+        toast({ 
+          title: "Account Already Exists", 
+          description: "This email is already in use. You cannot create a new account with it.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Creation Failed", description: error.message, variant: "destructive" });
+      }
     } finally {
       setIsAdding(false);
     }
