@@ -11,11 +11,11 @@ export function initializeFirebase() {
   if (!getApps().length) {
     let firebaseApp;
     try {
-      firebaseApp = initializeApp();
+      // In web workstation, initializeApp() with no args might fail if auto-config isn't detected correctly.
+      // We prioritize the explicit config object.
+      firebaseApp = initializeApp(firebaseConfig);
     } catch (e) {
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
+      console.warn('Initial Firebase initialization failed. Retrying...', e);
       firebaseApp = initializeApp(firebaseConfig);
     }
     return getSdks(firebaseApp);

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, setDoc, query, where, getDocs, limit } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -57,32 +57,61 @@ export function ViewerRequests() {
 
     setProcessingId(req.id);
     try {
-      // 1. Create Auth Account using stored password
-      const uid = await createAuthAccountSecondary(req.email, req.password);
+      // 1. Create Auth Account
+      let uid: string;
+      try {
+        uid = await createAuthAccountSecondary(req.email, req.password);
+      } catch (authError: any) {
+        if (authError.code === 'auth/email-already-in-use') {
+          // If already exists, we might need to find the existing UID
+          // For simplicity in this demo flow, we assume the admin handles duplicates manually
+          // or we can try to look up the user if we had a dedicated search tool.
+          throw authError;
+        }
+        throw authError;
+      }
       
       // 2. Create User Profile
       const userDocRef = doc(db, "users", uid);
-      const userData = {
+      await setDoc(userDocRef, {
         id: uid,
         name: req.name,
         email: req.email,
         role: "VIEWER",
         status: "ACTIVE",
         createdAt: new Date().toISOString()
-      };
+      });
 
-      await setDoc(userDocRef, userData);
+      // 3. Automated Data Assignment (Day 0 Feature)
+      // We look for a survey that might match the request interest or just create a mapping
+      // For now, we create a SurveyAccess record even if surveyId is just a descriptive string
+      // so the ViewerDashboard has a record to find.
+      
+      // Try to find any existing survey to assign as a default
+      const surveysRef = collection(db, "surveys");
+      const sampleSurveyQuery = query(surveysRef, limit(1));
+      const sampleSnap = await getDocs(sampleSurveyQuery);
+      
+      const targetSurveyId = !sampleSnap.empty ? sampleSnap.docs[0].id : "default-assignment";
 
-      // 3. Mark Request as Approved
+      const accessId = `${uid}_${targetSurveyId}`;
+      await setDoc(doc(db, "survey_access", accessId), {
+        id: accessId,
+        viewerId: uid,
+        surveyId: targetSurveyId,
+        assignedAt: new Date().toISOString()
+      });
+
+      // 4. Mark Request as Approved
       const reqDocRef = doc(db, "viewer_requests", req.id);
       await updateDoc(reqDocRef, { status: 'APPROVED' });
       
-      toast({ title: "Account Created", description: `Viewer account for ${req.name} is now active.` });
+      toast({ title: "Account Created & Authorized", description: `Viewer account for ${req.name} is now active with initial data.` });
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         toast({ 
           title: "Email Already Exists", 
-          description: "An account with this email already exists. Mark the request as handled manually.", 
+          description: "An account with this email already exists in Auth. Please handle role assignment in User Management.", 
           variant: "destructive" 
         });
       } else {
@@ -225,7 +254,6 @@ export function ViewerRequests() {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="rounded-3xl border-none">
           <AlertDialogHeader>

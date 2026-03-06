@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
@@ -38,10 +39,17 @@ export function ViewerDashboard() {
       try {
         const surveys: Survey[] = [];
         for (const mapping of accessMappings) {
-          const docRef = doc(db, "surveys", mapping.surveyId);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            surveys.push({ id: snap.id, ...snap.data() } as Survey);
+          // Safety check: skip placeholder or invalid IDs
+          if (!mapping.surveyId || mapping.surveyId === 'default-assignment') continue;
+          
+          try {
+            const docRef = doc(db, "surveys", mapping.surveyId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+              surveys.push({ id: snap.id, ...snap.data() } as Survey);
+            }
+          } catch (e) {
+            console.warn(`Could not fetch survey ${mapping.surveyId}`);
           }
         }
         setAssignedSurveys(surveys);
@@ -88,7 +96,7 @@ export function ViewerDashboard() {
                 </div>
                 <CardTitle className="text-xl font-headline font-bold text-slate-900 leading-tight">{s.title || "Voter Sentiment Report"}</CardTitle>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed line-clamp-2">
-                  {s.description || `Voter data for ${s.wardId || 'Target Ward'} - Compiled on ${new Date(s.createdAt).toLocaleDateString()}`}
+                  {s.description || `Voter data for ${s.wardId || 'Target Ward'} - Compiled on ${s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}`}
                 </p>
               </CardHeader>
               <CardContent className="p-6 pt-0">
