@@ -1,7 +1,9 @@
+
 "use client";
 
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { useState } from "react";
+import { useFirestore, useCollection, useMemoFirebase, useUser, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { collection, query, where, doc } from "firebase/firestore";
 import { 
   Table, 
   TableBody, 
@@ -16,19 +18,56 @@ import { Button } from "@/components/ui/button";
 import { 
   Search, 
   Filter, 
-  Eye, 
+  Edit, 
+  Trash2,
   MoreVertical, 
   CheckCircle2, 
   MapPin,
   Calendar,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function SurveyorSubmissions() {
   const { user } = useUser();
   const db = useFirestore();
+  const { toast } = useToast();
+
+  // Dialog States
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState<any>(null);
+  const [editData, setEditData] = useState<any>({});
 
   const submissionsQuery = useMemoFirebase(() => {
     if (!user || !db) return null;
@@ -36,6 +75,36 @@ export function SurveyorSubmissions() {
   }, [db, user]);
 
   const { data: submissions, isLoading } = useCollection(submissionsQuery);
+
+  const triggerDelete = (survey: any) => {
+    setSelectedSurvey(survey);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!db || !selectedSurvey) return;
+    const docRef = doc(db, "surveys", selectedSurvey.id);
+    deleteDocumentNonBlocking(docRef);
+    toast({ title: "Survey Deleted", description: "The record has been removed from history." });
+    setDeleteDialogOpen(false);
+  };
+
+  const triggerEdit = (survey: any) => {
+    setSelectedSurvey(survey);
+    setEditData({ ...survey });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!db || !selectedSurvey) return;
+    const docRef = doc(db, "surveys", selectedSurvey.id);
+    updateDocumentNonBlocking(docRef, {
+      ...editData,
+      updatedAt: new Date().toISOString()
+    });
+    toast({ title: "Survey Updated", description: "Changes have been saved successfully." });
+    setEditDialogOpen(false);
+  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -71,10 +140,21 @@ export function SurveyorSubmissions() {
                       <h3 className="font-bold text-slate-900">{sub.respondentName || "Household"}</h3>
                       <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">ID: {sub.id.slice(0, 8)}</p>
                     </div>
-                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-[10px] font-bold px-2 py-0.5">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Synced
-                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                          <MoreVertical className="w-4 h-4 text-slate-400" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => triggerEdit(sub)} className="font-bold text-xs cursor-pointer">
+                          <Edit className="w-3 h-3 mr-2" /> Edit Record
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => triggerDelete(sub)} className="font-bold text-xs text-red-500 cursor-pointer">
+                          <Trash2 className="w-3 h-3 mr-2" /> Delete Record
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-xs font-medium text-slate-500 mb-4">
                     <div className="flex items-center gap-1.5">
@@ -95,9 +175,10 @@ export function SurveyorSubmissions() {
                     )}>
                       {sub.householdVoterMood}
                     </span>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-slate-50">
-                      <Eye className="w-4 h-4 text-slate-400" />
-                    </Button>
+                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-[10px] font-bold px-2 py-0.5">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Synced
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -142,9 +223,21 @@ export function SurveyorSubmissions() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100">
-                        <MoreVertical className="w-4 h-4 text-slate-400" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100">
+                            <MoreVertical className="w-4 h-4 text-slate-400" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuItem onClick={() => triggerEdit(sub)} className="font-bold text-xs cursor-pointer">
+                            <Edit className="w-3 h-3 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => triggerDelete(sub)} className="font-bold text-xs text-red-500 cursor-pointer">
+                            <Trash2 className="w-3 h-3 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -158,6 +251,85 @@ export function SurveyorSubmissions() {
           </Card>
         </>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-xl rounded-3xl border-none">
+          <DialogHeader>
+            <DialogTitle className="font-headline font-bold text-xl">Edit Survey Record</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">Update the respondent details or field observations.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Respondent Name</Label>
+              <Input 
+                value={editData.respondentName || ""}
+                onChange={(e) => setEditData({ ...editData, respondentName: e.target.value })}
+                className="h-11 rounded-xl bg-slate-50 border-slate-100"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Voter Mood</Label>
+              <Select value={editData.householdVoterMood} onValueChange={(val) => setEditData({ ...editData, householdVoterMood: val })}>
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pro-change">Pro-change</SelectItem>
+                  <SelectItem value="Neutral">Neutral</SelectItem>
+                  <SelectItem value="Pro-continuity">Pro-continuity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Top Local Issue</Label>
+              <Input 
+                value={editData.topIssue || ""}
+                onChange={(e) => setEditData({ ...editData, topIssue: e.target.value })}
+                className="h-11 rounded-xl bg-slate-50 border-slate-100"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Observer Notes</Label>
+              <Textarea 
+                value={editData.notes || ""}
+                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                className="min-h-[120px] rounded-xl bg-slate-50 border-slate-100 resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditDialogOpen(false)} className="rounded-xl h-12 font-bold">Cancel</Button>
+            <Button onClick={handleSaveEdit} className="bg-primary rounded-xl h-12 px-8 font-bold shadow-lg shadow-primary/10">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              Remove Survey?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 text-sm">
+              Are you sure you want to delete the survey for <strong>{selectedSurvey?.respondentName}</strong>? This will permanently remove it from ward analytics.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="rounded-xl h-12 font-bold border-slate-100">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="rounded-xl h-12 px-8 font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg shadow-rose-100"
+            >
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
