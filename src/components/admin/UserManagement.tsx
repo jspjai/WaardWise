@@ -1,8 +1,16 @@
+
 "use client";
 
 import { useState } from "react";
-import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, useAuth } from "@/firebase";
-import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { 
+  useFirestore, 
+  useCollection, 
+  useMemoFirebase, 
+  createAuthAccountSecondary, 
+  useAuth,
+  deleteDocumentNonBlocking
+} from "@/firebase";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -22,6 +30,7 @@ export function UserManagement() {
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: 'SURVEYOR' as Role });
 
   const usersQuery = useMemoFirebase(() => {
@@ -51,7 +60,7 @@ export function UserManagement() {
 
       toast({ 
         title: "User Created Successfully", 
-        description: `Account created for ${newUser.name}. Provide them with the password.` 
+        description: `Account created for ${newUser.name}.` 
       });
       setNewUser({ name: "", email: "", password: "", role: 'SURVEYOR' });
     } catch (error: any) {
@@ -63,13 +72,16 @@ export function UserManagement() {
 
   const handleResetPassword = async (email: string, userId: string) => {
     if (!auth) {
-      toast({ title: "Error", description: "Auth service not ready.", variant: "destructive" });
+      toast({ title: "Error", description: "Authentication service not initialized.", variant: "destructive" });
       return;
     }
     setProcessingId(userId);
     try {
       await sendPasswordResetEmail(auth, email);
-      toast({ title: "Reset Link Sent", description: `A password reset link has been sent to ${email}` });
+      toast({ 
+        title: "Reset Link Sent", 
+        description: `A password reset email has been sent to ${email}.` 
+      });
     } catch (error: any) {
       toast({ title: "Request Failed", description: error.message, variant: "destructive" });
     } finally {
@@ -78,13 +90,18 @@ export function UserManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Revoke all access for this user? Note: This only deletes the profile record, not the Auth account.")) return;
     if (!db) return;
+    if (!confirm("Are you sure you want to revoke access for this user? This action will remove their profile from the database.")) return;
+    
+    setDeletingId(id);
     try {
-      await deleteDoc(doc(db, "users", id));
-      toast({ title: "User Access Revoked" });
+      const userDocRef = doc(db, "users", id);
+      deleteDocumentNonBlocking(userDocRef);
+      toast({ title: "Access Revoked", description: "The user profile has been scheduled for deletion." });
     } catch (error: any) {
-      toast({ title: "Revoke Failed", variant: "destructive" });
+      toast({ title: "Deletion Error", description: error.message, variant: "destructive" });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -93,7 +110,7 @@ export function UserManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Identity & Role Management</h1>
-          <p className="text-slate-500 text-sm mt-1">Create accounts and manage role permissions.</p>
+          <p className="text-slate-500 text-sm mt-1">Authorize system users and manage role permissions.</p>
         </div>
       </div>
 
@@ -102,7 +119,7 @@ export function UserManagement() {
           <CardHeader>
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-primary" />
-              Create New Account
+              Create Account
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -126,7 +143,6 @@ export function UserManagement() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input type="password" placeholder="Min 6 characters" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="pl-9 h-11 rounded-xl" />
               </div>
-              <p className="text-[10px] text-slate-400">User should change this after first login.</p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-slate-400">System Role</Label>
@@ -143,7 +159,7 @@ export function UserManagement() {
             </div>
             <Button onClick={handleAddUser} disabled={isAdding} className="w-full h-12 rounded-xl font-bold bg-primary mt-4 shadow-lg shadow-primary/20">
               {isAdding ? <Loader2 className="animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-              Create User Account
+              Initialize Account
             </Button>
           </CardContent>
         </Card>
@@ -153,7 +169,7 @@ export function UserManagement() {
             <CardTitle className="text-lg font-bold">Authorized Personnel</CardTitle>
             <div className="relative w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Filter users..." className="pl-9 h-9 text-xs rounded-lg" />
+              <Input placeholder="Filter team..." className="pl-9 h-9 text-xs rounded-lg" />
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -166,7 +182,7 @@ export function UserManagement() {
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 pl-6 py-4">Name</TableHead>
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Role</TableHead>
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Email</TableHead>
-                    <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4 text-right pr-6">Action</TableHead>
+                    <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4 text-right pr-6">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -176,8 +192,8 @@ export function UserManagement() {
                       <TableCell>
                         <Badge className={cn(
                           "uppercase text-[9px] font-black tracking-widest px-2",
-                          u.role === 'ADMIN' ? 'bg-indigo-500 text-white' : 
-                          u.role === 'SURVEYOR' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'
+                          u.role === 'ADMIN' ? 'bg-primary text-white' : 
+                          u.role === 'SURVEYOR' ? 'bg-emerald-500 text-white' : 'bg-slate-400 text-white'
                         )}>{u.role}</Badge>
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">{u.email}</TableCell>
@@ -188,12 +204,19 @@ export function UserManagement() {
                           className="h-8 w-8 text-slate-300 hover:text-primary" 
                           disabled={processingId === u.id}
                           onClick={() => handleResetPassword(u.email, u.id)}
-                          title="Send Password Reset Link"
+                          title="Reset Password"
                         >
                           {processingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500" onClick={() => handleDelete(u.id)}>
-                          <Trash2 className="w-4 h-4" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-300 hover:text-red-500" 
+                          disabled={deletingId === u.id}
+                          onClick={() => handleDelete(u.id)}
+                          title="Delete User"
+                        >
+                          {deletingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </Button>
                       </TableCell>
                     </TableRow>
