@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -44,7 +45,7 @@ export default function Home() {
   useEffect(() => {
     if (adminData) {
       setUserRole("ADMIN");
-      setUserName("Administrator");
+      setUserName(adminData.name || "Administrator");
       if (!activeView) setActiveView("Dashboard");
     } else if (surveyorData) {
       setUserRole("SURVEYOR");
@@ -66,13 +67,13 @@ export default function Home() {
         email: firebaseUser.email,
         name: firebaseUser.email === 'suryajai642@gmail.com' ? "Super Admin" : "Administrator",
         role: "ADMIN",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
       toast({
         title: "Admin Role Assigned",
         description: `Account ${firebaseUser.email} has been promoted to Admin.`,
       });
-      // Component will re-render and adminData will trigger role switch
     } catch (error: any) {
       toast({
         title: "Promotion Failed",

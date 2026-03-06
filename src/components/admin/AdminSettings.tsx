@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -14,7 +15,7 @@ import {
   Shield, 
   Database, 
   Bell, 
-  Globe, 
+  History, 
   Lock,
   UserCheck,
   Zap,
@@ -24,10 +25,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Users,
-  History,
   Trash2,
   Mail,
-  UserPlus
+  UserPlus,
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,12 +45,12 @@ export function AdminSettings() {
   const adminsQuery = useMemoFirebase(() => collection(db, "roles_admin"), [db]);
   const { data: admins, isLoading: isAdminsLoading } = useCollection(adminsQuery);
 
-  // Data for Audit Logs (Mocked using recent surveys/activity)
+  // Data for Audit Logs (Using recent surveys as a proxy for activity)
   const auditLogsQuery = useMemoFirebase(() => 
-    query(collection(db, "surveys"), orderBy("createdAt", "desc"), limit(10)), 
+    query(collection(db, "surveys"), orderBy("createdAt", "desc"), limit(20)), 
     [db]
   );
-  const { data: recentActivity } = useCollection(auditLogsQuery);
+  const { data: recentActivity, isLoading: isLogsLoading } = useCollection(auditLogsQuery);
 
   const handleBootstrap = async () => {
     if (!db || !user) {
@@ -65,6 +66,7 @@ export function AdminSettings() {
     try {
       const batch = writeBatch(db);
 
+      // Ensure the current user is an admin
       batch.set(doc(db, "roles_admin", user.uid), {
         id: user.uid,
         email: user.email,
@@ -74,16 +76,7 @@ export function AdminSettings() {
         updatedAt: new Date().toISOString()
       });
 
-      batch.set(doc(db, "candidates", user.uid), {
-        id: user.uid,
-        name: user.email === 'suryajai642@gmail.com' ? "Super Admin" : "Candidate User",
-        email: user.email,
-        role: "CANDIDATE",
-        purchasedWardIds: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-
+      // Sample Wards
       const wards = [
         { 
           id: "ward-80", 
@@ -162,15 +155,17 @@ export function AdminSettings() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={cn(
-                "w-full flex items-center justify-between p-4 rounded-2xl transition-all font-bold text-sm text-left",
-                activeTab === item.id ? "bg-white shadow-sm text-primary border-l-4 border-primary" : "text-slate-500 hover:bg-slate-50"
+                "w-full flex items-center justify-between p-4 rounded-2xl transition-all font-bold text-sm text-left border border-transparent",
+                activeTab === item.id 
+                  ? "bg-white shadow-sm text-primary border-slate-100 ring-2 ring-primary/5" 
+                  : "text-slate-500 hover:bg-slate-100/50"
               )}
             >
               <div className="flex items-center gap-3">
-                <item.icon className="w-5 h-5" />
+                <item.icon className={cn("w-5 h-5", activeTab === item.id ? "text-primary" : "text-slate-400")} />
                 {item.label}
               </div>
-              {activeTab === item.id && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+              {activeTab === item.id && <ArrowRight className="w-4 h-4 text-primary animate-in slide-in-from-left-2" />}
             </button>
           ))}
         </div>
@@ -256,6 +251,11 @@ export function AdminSettings() {
                           </TableCell>
                         </TableRow>
                       ))}
+                      {!admins?.length && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-12 text-slate-400 font-bold uppercase text-[10px]">No other admins found</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 )}
@@ -269,33 +269,39 @@ export function AdminSettings() {
                 <CardTitle className="text-lg font-headline font-bold">System Audit Logs</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="border-slate-50">
-                      <TableHead className="text-[10px] font-bold uppercase py-4">Event</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">User</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase py-4">Timestamp</TableHead>
-                      <TableHead className="text-[10px] font-bold uppercase py-4 text-right">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentActivity?.map((log: any) => (
-                      <TableRow key={log.id} className="border-slate-50">
-                        <TableCell className="text-xs font-bold text-slate-700">Survey Submission: {log.respondentName || 'Household'}</TableCell>
-                        <TableCell className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {log.surveyorId?.slice(0, 6)}</TableCell>
-                        <TableCell className="text-[10px] font-medium text-slate-500">{new Date(log.submissionTimestamp).toLocaleString()}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[9px] font-bold">SUCCESS</Badge>
-                        </TableCell>
+                {isLogsLoading ? (
+                  <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow className="border-slate-50">
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Event</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4">User</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Timestamp</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4 text-right">Status</TableHead>
                       </TableRow>
-                    ))}
-                    {!recentActivity?.length && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-12 text-slate-400 font-bold uppercase text-[10px]">No recent activity logs</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {recentActivity?.map((log: any) => (
+                        <TableRow key={log.id} className="border-slate-50">
+                          <TableCell className="text-xs font-bold text-slate-700">Survey Submission: {log.respondentName || 'Household'}</TableCell>
+                          <TableCell className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {log.surveyorId?.slice(0, 6)}</TableCell>
+                          <TableCell className="text-[10px] font-medium text-slate-500">
+                            {log.submissionTimestamp ? new Date(log.submissionTimestamp).toLocaleString() : 'Just now'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[9px] font-bold">SUCCESS</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!recentActivity?.length && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-12 text-slate-400 font-bold uppercase text-[10px]">No recent activity logs detected</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           )}
@@ -341,17 +347,17 @@ export function AdminSettings() {
                     <Button 
                       variant="outline" 
                       onClick={() => setActiveTab("logs")}
-                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
+                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50 group"
                     >
-                        <Lock className="w-5 h-5 mr-3 text-primary" />
+                        <History className="w-5 h-5 mr-3 text-primary group-hover:scale-110 transition-transform" />
                         Audit Logs
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setActiveTab("admins")}
-                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
+                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50 group"
                     >
-                        <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
+                        <UserCheck className="w-5 h-5 mr-3 text-emerald-500 group-hover:scale-110 transition-transform" />
                         Manage Admins
                     </Button>
                   </CardContent>
