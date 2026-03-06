@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Trash2, Shield, Loader2, Search, UserCheck } from "lucide-react";
 import { Role, UserProfile } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export function UserManagement() {
   const db = useFirestore();
@@ -21,7 +22,10 @@ export function UserManagement() {
   const [isAdding, setIsAdding] = useState(false);
   const [newUser, setNewUser] = useState({ uid: "", name: "", email: "", role: 'VIEWER' as Role });
 
-  const usersQuery = useMemoFirebase(() => collection(db, "users"), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return collection(db, "users");
+  }, [db]);
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
 
   const handleAddUser = async () => {
