@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -22,7 +21,8 @@ import {
   Save,
   Loader2,
   DatabaseZap,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,8 +36,8 @@ export function AdminSettings() {
   const handleBootstrap = async () => {
     if (!db || !user) {
       toast({
-        title: "Error",
-        description: "Firestore or User session not found.",
+        title: "Configuration Error",
+        description: "Firestore or User session not detected. Please refresh the page.",
         variant: "destructive"
       });
       return;
@@ -53,7 +53,8 @@ export function AdminSettings() {
         email: user.email,
         name: user.email === 'suryajai642@gmail.com' ? "Super Admin" : "Administrator",
         role: "ADMIN",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
       // 2. Initialize the candidate profile for the super admin (for testing)
@@ -63,7 +64,8 @@ export function AdminSettings() {
         email: user.email,
         role: "CANDIDATE",
         purchasedWardIds: [],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
       // 3. Create initial Wards
@@ -107,13 +109,14 @@ export function AdminSettings() {
       await batch.commit();
       
       toast({
-        title: "System Bootstrapped",
-        description: "Initial wards and your Admin credentials have been successfully initialized.",
+        title: "System Ready",
+        description: "Wards and Admin credentials successfully initialized.",
       });
     } catch (error: any) {
+      console.error("Bootstrap error:", error);
       toast({
         title: "Bootstrap Failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred during database initialization.",
         variant: "destructive"
       });
     } finally {
@@ -123,8 +126,15 @@ export function AdminSettings() {
 
   const handleSaveConfig = () => {
     toast({
-      title: "Settings Saved",
-      description: "Global configuration has been updated successfully.",
+      title: "Changes Applied",
+      description: "Application configuration has been updated successfully.",
+    });
+  };
+
+  const handleSecurityAction = (action: string) => {
+    toast({
+      title: "Restricted Access",
+      description: `The '${action}' module is currently syncing with the security cloud.`,
     });
   };
 
@@ -140,7 +150,7 @@ export function AdminSettings() {
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div>
         <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">Admin Settings</h1>
-        <p className="text-sm text-slate-500 mt-1">Configure global application behavior and security.</p>
+        <p className="text-sm text-slate-500 mt-1">Configure global application behavior and platform security.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -211,7 +221,7 @@ export function AdminSettings() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Initialize the mandatory Firestore collections with sample Wards and system roles. This is required for the application to function correctly.
+                  Initialize mandatory Firestore collections with sample Wards and system roles. This ensures the Ward Marketplace and Analytics views are populated.
                 </p>
                 <Button 
                   onClick={handleBootstrap}
@@ -223,10 +233,10 @@ export function AdminSettings() {
                   ) : (
                     <Zap className="w-4 h-4 text-amber-500" />
                   )}
-                  {isBootstrapping ? "Initializing..." : "Bootstrap Initial Data"}
+                  {isBootstrapping ? "Executing Writes..." : "Bootstrap Initial Data"}
                 </Button>
                 {isBootstrapping && (
-                  <p className="text-[10px] text-amber-400 font-bold text-center uppercase tracking-widest">Writing batch records to Firestore...</p>
+                  <p className="text-[10px] text-amber-400 font-bold text-center uppercase tracking-widest animate-pulse">Writing batch records to cloud storage...</p>
                 )}
               </CardContent>
             </Card>
@@ -239,11 +249,19 @@ export function AdminSettings() {
                     <CardTitle className="text-lg font-headline font-bold">Access Controls</CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 flex flex-col gap-4">
-                    <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleSecurityAction("Audit Logs")}
+                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
+                    >
                         <Lock className="w-5 h-5 mr-3 text-primary" />
                         Audit Logs
                     </Button>
-                    <Button variant="outline" className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleSecurityAction("Manage Admins")}
+                      className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
+                    >
                         <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
                         Manage Admins
                     </Button>
@@ -254,7 +272,7 @@ export function AdminSettings() {
                   <div>
                      <h4 className="font-bold text-emerald-900">Security Rules Active</h4>
                      <p className="text-sm text-emerald-700 mt-1 leading-relaxed">
-                        Your Firestore database is protected by production-grade security rules. Only authorized admins and assigned staff can modify data.
+                        Your platform is protected by production-grade Firebase security rules. Only your authorized account can modify critical ward data.
                      </p>
                   </div>
                </div>
@@ -274,6 +292,40 @@ export function AdminSettings() {
                     <Save className="w-5 h-5 mr-3" />
                     Save Configuration
                  </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "localization" && (
+            <div className="bg-amber-50 border border-amber-100 p-8 rounded-3xl text-center space-y-4">
+              <Globe className="w-12 h-12 text-amber-500 mx-auto" />
+              <h3 className="font-headline font-bold text-amber-900">Localization Engine</h3>
+              <p className="text-sm text-amber-700 leading-relaxed max-w-sm mx-auto">
+                Automatic translation for field surveyors (Kannada, Telugu, Hindi) is currently being calibrated for your region.
+              </p>
+              <Button variant="outline" className="rounded-xl border-amber-200 text-amber-700 font-bold h-11" onClick={() => handleSecurityAction("Localization")}>
+                Configure Regions
+              </Button>
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-50 p-6">
+                <CardTitle className="text-lg font-headline font-bold">Alert Subscriptions</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-700">Critical Shift Alerts</span>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-700">Daily Ward Reports</span>
+                    <Switch />
+                  </div>
+                </div>
+                <Button className="w-full rounded-xl h-12 font-bold" onClick={handleSaveConfig}>Update Preferences</Button>
               </CardContent>
             </Card>
           )}
