@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Role } from "@/lib/types";
 import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { WardsBooths } from "@/components/admin/WardsBooths";
@@ -18,7 +18,7 @@ import { CandidatePortal } from "@/components/candidate/CandidatePortal";
 import { CandidateReports } from "@/components/candidate/CandidateReports";
 import { CandidateAnalysisOverview } from "@/components/candidate/CandidateAnalysisOverview";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2, AlertCircle, Zap } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, Zap, UserPlus } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,15 +64,15 @@ export default function Home() {
       await setDoc(doc(db, "roles_admin", firebaseUser.uid), {
         id: firebaseUser.uid,
         email: firebaseUser.email,
-        name: "Administrator",
+        name: "Super Admin",
         role: "ADMIN",
         createdAt: new Date().toISOString()
       });
       toast({
         title: "Admin Role Assigned",
-        description: "Your account has been promoted to Admin. Refreshing...",
+        description: `Account ${firebaseUser.email} has been promoted to Super Admin.`,
       });
-      window.location.reload();
+      // Component will re-render and find adminData
     } catch (error: any) {
       toast({
         title: "Promotion Failed",
@@ -101,16 +101,20 @@ export default function Home() {
 
   // Handle users who are logged in but have no role defined yet in Firestore
   if (!userRole && !isAdminLoading && !isSurveyorLoading && !isCandidateLoading) {
+    const isTargetUser = firebaseUser.email === 'suryajai642@gmail.com';
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 text-center">
         <div className="max-w-md space-y-6 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50">
           <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500">
-            <AlertCircle className="w-10 h-10" />
+            {isTargetUser ? <UserPlus className="w-10 h-10 text-primary" /> : <AlertCircle className="w-10 h-10" />}
           </div>
           <div className="space-y-2">
-            <h1 className="text-xl font-headline font-extrabold text-slate-900">Account Pending Assignment</h1>
+            <h1 className="text-xl font-headline font-extrabold text-slate-900">
+              {isTargetUser ? "Welcome, Primary Administrator" : "Account Pending Assignment"}
+            </h1>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Your account ({firebaseUser.email}) is active, but hasn't been assigned a system role (Admin, Surveyor, or Candidate).
+              Your account ({firebaseUser.email}) is active, but hasn't been assigned a role in the live database.
             </p>
           </div>
           <div className="flex flex-col gap-3">
@@ -120,7 +124,7 @@ export default function Home() {
               className="bg-primary hover:bg-primary/90 text-white rounded-xl h-12 font-bold shadow-lg shadow-primary/20 gap-2"
             >
               {isPromoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-400" />}
-              Initialize Admin Account
+              {isTargetUser ? "Authorize Super Admin Role" : "Initialize Admin Account"}
             </Button>
             <Button variant="ghost" onClick={() => { window.location.reload(); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Refresh Status

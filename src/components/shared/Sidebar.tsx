@@ -61,7 +61,7 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
     ],
   };
 
-  const currentItems = navItems[role];
+  const currentItems = navItems[role] || [];
 
   const handleLogout = async () => {
     try {
@@ -70,6 +70,8 @@ export function AppSidebar({ role, activeView, onViewChange, userName }: Sidebar
         title: "Logged Out",
         description: "You have been successfully signed out.",
       });
+      // Optionally redirect or force reload
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: "Logout Error",

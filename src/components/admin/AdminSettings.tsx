@@ -51,6 +51,8 @@ export function AdminSettings() {
       batch.set(doc(db, "roles_admin", user.uid), {
         id: user.uid,
         email: user.email,
+        name: user.email === 'suryajai642@gmail.com' ? "Super Admin" : "Administrator",
+        role: "ADMIN",
         createdAt: new Date().toISOString()
       });
 
@@ -99,7 +101,7 @@ export function AdminSettings() {
       
       toast({
         title: "System Bootstrapped",
-        description: "Initial wards, roles, and master data have been successfully initialized.",
+        description: "Initial wards and your Super Admin role have been successfully initialized.",
       });
     } catch (error: any) {
       toast({
@@ -135,7 +137,6 @@ export function AdminSettings() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Navigation Sidebar */}
         <div className="lg:col-span-1 space-y-2">
           {navItems.map((item) => (
             <button
@@ -155,7 +156,6 @@ export function AdminSettings() {
           ))}
         </div>
 
-        {/* Content Area */}
         <div className="lg:col-span-2 space-y-6">
           {activeTab === "general" && (
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
@@ -204,7 +204,7 @@ export function AdminSettings() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <p className="text-sm text-slate-400 leading-relaxed">
-                  Initialize the mandatory Firestore collections with sample Wards, your Admin role, and system schemas. This is required for the application to function correctly in production.
+                  Initialize the mandatory Firestore collections with sample Wards and system roles. This is required for the application to function correctly.
                 </p>
                 <Button 
                   onClick={handleBootstrap}
@@ -256,7 +256,7 @@ export function AdminSettings() {
                 <div>
                    <h4 className="font-bold text-emerald-900">Security Rules Active</h4>
                    <p className="text-sm text-emerald-700 mt-1 leading-relaxed">
-                      Your Firestore database is protected by production-grade security rules that prevent unauthorized access and ensure data integrity.
+                      Your Firestore database is protected by production-grade security rules. Only authorized admins and assigned staff can modify data.
                    </p>
                 </div>
              </div>
