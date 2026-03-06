@@ -25,7 +25,13 @@ import {
   MapPin,
   Calendar,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  User,
+  Home,
+  FileText,
+  TrendingUp,
+  ShieldCheck,
+  Building2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +39,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +65,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+const SEVERITY_OPTIONS = ["Low", "Medium", "High"];
 
 export function SurveyorSubmissions() {
   const { user } = useUser();
@@ -118,7 +128,7 @@ export function SurveyorSubmissions() {
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">My Submissions</h1>
@@ -263,56 +273,235 @@ export function SurveyorSubmissions() {
         </>
       )}
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog - Expanded for all 7 sections */}
       <Dialog open={editDialogOpen} onOpenChange={handleCloseEdit}>
-        <DialogContent className="max-w-xl rounded-3xl border-none">
-          <DialogHeader>
-            <DialogTitle className="font-headline font-bold text-xl">Edit Survey Record</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Update the respondent details or field observations.</DialogDescription>
+        <DialogContent className="max-w-3xl h-[90vh] flex flex-col rounded-3xl border-none">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle className="font-headline font-bold text-xl">Full Survey Edit</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">Refine details from all 7 survey sections.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Respondent Name</Label>
-              <Input 
-                value={editData.respondentName || ""}
-                onChange={(e) => setEditData({ ...editData, respondentName: e.target.value })}
-                className="h-11 rounded-xl bg-slate-50 border-slate-100"
-              />
+          
+          <ScrollArea className="flex-1 px-6">
+            <div className="space-y-8 py-4">
+              {/* Section 1: Booth Identification */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Building2 className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">1. Booth Identification</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Ward ID</Label>
+                    <Input value={editData.wardId || ""} readOnly className="h-11 rounded-xl bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Booth Number</Label>
+                    <Input 
+                      value={editData.boothNumber || ""} 
+                      onChange={(e) => setEditData({ ...editData, boothNumber: e.target.value })}
+                      className="h-11 rounded-xl bg-white border-slate-100" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 2: Household Identification */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Home className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">2. Household Identification</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Respondent Name</Label>
+                    <Input 
+                      value={editData.respondentName || ""} 
+                      onChange={(e) => setEditData({ ...editData, respondentName: e.target.value })}
+                      className="h-11 rounded-xl bg-white border-slate-100" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Address / Landmark</Label>
+                    <Input 
+                      value={editData.houseNumberLandmark || ""} 
+                      onChange={(e) => setEditData({ ...editData, houseNumberLandmark: e.target.value })}
+                      className="h-11 rounded-xl bg-white border-slate-100" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 3: Demographics */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <User className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">3. Demographics</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Gender</Label>
+                    <Select value={editData.gender} onValueChange={(val) => setEditData({ ...editData, gender: val })}>
+                      <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Age Group</Label>
+                    <Select value={editData.ageGroup} onValueChange={(val) => setEditData({ ...editData, ageGroup: val })}>
+                      <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="18–25">18–25</SelectItem>
+                        <SelectItem value="26–40">26–40</SelectItem>
+                        <SelectItem value="41–60">41–60</SelectItem>
+                        <SelectItem value="60+">60+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Language</Label>
+                    <Input value={editData.languageSpokenAtHome || ""} onChange={(e) => setEditData({ ...editData, languageSpokenAtHome: e.target.value })} className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Residency</Label>
+                    <Select value={editData.yearsLivingInArea} onValueChange={(val) => setEditData({ ...editData, yearsLivingInArea: val })}>
+                      <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="< 1 Year">&lt; 1 Year</SelectItem>
+                        <SelectItem value="1-5 Years">1-5 Years</SelectItem>
+                        <SelectItem value="5-10 Years">5-10 Years</SelectItem>
+                        <SelectItem value="10+ Years">10+ Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 4: Voter Status */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <TrendingUp className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">4. Voter Status</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Male Count</Label>
+                    <Input type="number" value={editData.householdMaleVoterCount || 0} onChange={(e) => setEditData({ ...editData, householdMaleVoterCount: parseInt(e.target.value) || 0 })} className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Female Count</Label>
+                    <Input type="number" value={editData.householdFemaleVoterCount || 0} onChange={(e) => setEditData({ ...editData, householdFemaleVoterCount: parseInt(e.target.value) || 0 })} className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Youth Count</Label>
+                    <Input type="number" value={editData.householdYouthVoterCount || 0} onChange={(e) => setEditData({ ...editData, householdYouthVoterCount: parseInt(e.target.value) || 0 })} className="h-11 rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Behavior</Label>
+                    <Select value={editData.votingBehavior} onValueChange={(val) => setEditData({ ...editData, votingBehavior: val })}>
+                      <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Always vote">Always vote</SelectItem>
+                        <SelectItem value="Sometimes vote">Sometimes vote</SelectItem>
+                        <SelectItem value="Rarely vote">Rarely vote</SelectItem>
+                        <SelectItem value="Never vote">Never vote</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 5: Issue Priority */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <AlertTriangle className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">5. Issue Priority (Severity)</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { id: "waterSupplySeverity", label: "Water Supply" },
+                    { id: "roadsSeverity", label: "Road Quality" },
+                    { id: "drainageSeverity", label: "Drainage" },
+                    { id: "garbageSeverity", label: "Garbage" },
+                    { id: "safetySeverity", label: "Safety" }
+                  ].map((issue) => (
+                    <div key={issue.id} className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-slate-600">{issue.label}</Label>
+                      <div className="flex gap-1">
+                        {SEVERITY_OPTIONS.map((opt) => (
+                          <Button
+                            key={opt}
+                            variant={editData[issue.id] === opt ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setEditData({ ...editData, [issue.id]: opt })}
+                            className="flex-1 h-9 rounded-lg text-[10px] uppercase font-bold"
+                          >
+                            {opt}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Section 6 & 7: Sentiment and Notes */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <FileText className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-widest">6 & 7. Sentiment & Notes</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Voter Mood</Label>
+                    <Select value={editData.householdVoterMood} onValueChange={(val) => setEditData({ ...editData, householdVoterMood: val })}>
+                      <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pro-change">Pro-change</SelectItem>
+                        <SelectItem value="Neutral">Neutral</SelectItem>
+                        <SelectItem value="Pro-continuity">Pro-continuity</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Top Local Issue</Label>
+                    <Input 
+                      value={editData.topIssue || ""} 
+                      onChange={(e) => setEditData({ ...editData, topIssue: e.target.value })}
+                      className="h-11 rounded-xl" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Observer Notes</Label>
+                  <Textarea 
+                    value={editData.notes || ""} 
+                    onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+                    className="min-h-[120px] rounded-xl bg-slate-50 border-slate-100 resize-none" 
+                  />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Voter Mood</Label>
-              <Select value={editData.householdVoterMood} onValueChange={(val) => setEditData({ ...editData, householdVoterMood: val })}>
-                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pro-change">Pro-change</SelectItem>
-                  <SelectItem value="Neutral">Neutral</SelectItem>
-                  <SelectItem value="Pro-continuity">Pro-continuity</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Top Local Issue</Label>
-              <Input 
-                value={editData.topIssue || ""}
-                onChange={(e) => setEditData({ ...editData, topIssue: e.target.value })}
-                className="h-11 rounded-xl bg-slate-50 border-slate-100"
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Observer Notes</Label>
-              <Textarea 
-                value={editData.notes || ""}
-                onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-                className="min-h-[120px] rounded-xl bg-slate-50 border-slate-100 resize-none"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => handleCloseEdit(false)} className="rounded-xl h-12 font-bold">Cancel</Button>
-            <Button onClick={handleSaveEdit} className="bg-primary rounded-xl h-12 px-8 font-bold shadow-lg shadow-primary/10">
-              Save Changes
+          </ScrollArea>
+
+          <DialogFooter className="px-6 py-4 border-t bg-slate-50/50">
+            <Button variant="ghost" onClick={() => handleCloseEdit(false)} className="rounded-xl h-12 font-bold px-8">Cancel</Button>
+            <Button onClick={handleSaveEdit} className="bg-primary rounded-xl h-12 px-12 font-bold shadow-lg shadow-primary/10">
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              Commit Changes
             </Button>
           </DialogFooter>
         </DialogContent>
