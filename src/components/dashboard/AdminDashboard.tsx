@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -26,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+// Initializing as empty for production clean slate
 const data = [];
 
 const sentimentData = [

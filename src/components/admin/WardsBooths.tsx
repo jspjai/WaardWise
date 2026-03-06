@@ -130,7 +130,7 @@ export function WardsBooths() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Wards", value: wards?.length || "0", icon: Map, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Booths", value: (wards?.length || 0) * 15, icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Total Booths", value: "0", icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Active Surveyors", value: "0", icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Avg. Coverage", value: "0%", icon: ChevronRight, color: "text-amber-600", bg: "bg-amber-50" },
         ].map((stat) => (
@@ -186,11 +186,11 @@ export function WardsBooths() {
                 <div className="grid grid-cols-3 border-y border-slate-50 bg-slate-50/30">
                   <div className="p-4 text-center border-r border-slate-50">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Booths</p>
-                    <p className="text-sm font-extrabold text-slate-900 mt-1">{ward.surveyCount > 0 ? (ward.surveyCount / 10).toFixed(0) : "0"}</p>
+                    <p className="text-sm font-extrabold text-slate-900 mt-1">0</p>
                   </div>
                   <div className="p-4 text-center border-r border-slate-50">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Coverage</p>
-                    <p className="text-sm font-extrabold text-emerald-600 mt-1">{ward.surveyCount > 0 ? "85%" : "0%"}</p>
+                    <p className="text-sm font-extrabold text-emerald-600 mt-1">0%</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Surveys</p>
@@ -199,13 +199,7 @@ export function WardsBooths() {
                 </div>
 
                 <div className="p-4 flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                        {String.fromCharCode(64 + i)}
-                      </div>
-                    ))}
-                  </div>
+                   <div className="text-[10px] font-bold text-slate-400 uppercase">No active team</div>
                   <Button variant="ghost" size="sm" className="text-primary font-bold text-xs hover:bg-primary/5">
                     Manage Booths
                     <ChevronRight className="w-3.5 h-3.5 ml-1" />

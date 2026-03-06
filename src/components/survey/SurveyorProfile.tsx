@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Reset performance stats for clean state
 const performanceStats = [
   { label: "Total Surveys", value: "0", target: "100", color: "bg-primary" },
   { label: "Ward Coverage", value: "0%", target: "100%", color: "bg-emerald-500" },

@@ -21,13 +21,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-const datasets = [
-  { id: "EXP-101", name: "Indiranagar Full Survey Data", records: "1,240", lastUpdated: "2h ago", format: "CSV" },
-  { id: "EXP-102", name: "Malleshwaram Voter Sentiments", records: "890", lastUpdated: "5h ago", format: "JSON" },
-  { id: "EXP-103", name: "Koramangala Issue Matrix", records: "412", lastUpdated: "1d ago", format: "XLSX" },
-  { id: "EXP-104", name: "Master Ward Analytics Q1", records: "12,842", lastUpdated: "3d ago", format: "PDF" },
-  { id: "EXP-105", name: "Youth Demographic Deep-dive", records: "3,200", lastUpdated: "5d ago", format: "CSV" },
-];
+// Cleared hardcoded datasets for clean state
+const datasets: any[] = [];
 
 export function DataExports() {
   const [isExporting, setIsExporting] = useState<string | null>(null);
@@ -66,7 +61,7 @@ export function DataExports() {
               </Badge>
               <h2 className="text-2xl md:text-3xl font-headline font-bold">Export Master Data Cloud</h2>
               <p className="text-slate-400 text-sm max-w-lg">
-                Instantly generate a consolidated report for all <span className="text-white font-bold">24,842 records</span> across 48 wards.
+                Consolidated report generation for all production records.
               </p>
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 pt-2">
                 <Button 
@@ -87,7 +82,7 @@ export function DataExports() {
                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
                <RefreshCw className="w-24 h-24 text-white/10 animate-spin-slow" />
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <span className="text-4xl font-extrabold tracking-tighter">98.2%</span>
+                  <span className="text-4xl font-extrabold tracking-tighter">0.0%</span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Health Index</span>
                </div>
             </div>
@@ -135,9 +130,6 @@ export function DataExports() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                  <Button variant="ghost" className="flex-1 md:flex-none bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl h-11 px-6 font-bold text-xs uppercase transition-all">
-                    View
-                  </Button>
                   <Button 
                     onClick={() => handleExport(set.id, set.name)}
                     disabled={isExporting !== null}
@@ -150,6 +142,11 @@ export function DataExports() {
               </CardContent>
             </Card>
           ))}
+          {datasets.length === 0 && (
+            <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No datasets available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
