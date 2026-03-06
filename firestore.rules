@@ -7,7 +7,6 @@ service cloud.firestore {
     }
 
     // Safer admin check that handles missing user documents gracefully
-    // Prioritizes the hardcoded super admin email for bootstrapping
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'suryajai642@gmail.com' ||
@@ -31,7 +30,6 @@ service cloud.firestore {
     // --- Users Collection ---
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Super admin can always write to initialize the system
       allow write: if isAdmin() || request.auth.token.email == 'suryajai642@gmail.com';
     }
 
@@ -46,14 +44,14 @@ service cloud.firestore {
 
     // --- Viewer Requests ---
     match /viewer_requests/{requestId} {
-      allow create: if true; // Public access for the request form
+      allow create: if true; 
       allow read, write: if isAdmin();
     }
 
     // --- Survey Access Mapping ---
     match /survey_access/{accessId} {
-      // Allow viewers to read their own mappings to see what data they have access to
-      allow read: if isAdmin() || (isSignedIn() && resource.data.viewerId == request.auth.uid);
+      // FIX: Allow viewers to read their own mappings so dashboard can resolve surveys
+      allow read: if isAdmin() || (isSignedIn() && (resource.data.viewerId == request.auth.uid || accessId.startsWith(request.auth.uid)));
       allow write: if isAdmin();
     }
 

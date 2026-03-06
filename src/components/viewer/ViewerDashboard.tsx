@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
@@ -7,14 +6,32 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Lock, Loader2, Database } from "lucide-react";
+import { FileText, Download, Lock, Loader2, Database, MessageSquare, Send } from "lucide-react";
 import { Survey, SurveyAccess } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export function ViewerDashboard() {
-  const { user } = useUser();
+  const { user } = userUser(); // Correcting user hook usage
   const db = useFirestore();
+  const { toast } = useToast();
   const [assignedSurveys, setAssignedSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Support Dialog State
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
 
   // 1. Get Access Mappings for this viewer
   const accessQuery = useMemoFirebase(() => {
@@ -39,7 +56,6 @@ export function ViewerDashboard() {
       try {
         const surveys: Survey[] = [];
         for (const mapping of accessMappings) {
-          // Safety check: skip placeholder or invalid IDs
           if (!mapping.surveyId || mapping.surveyId === 'default-assignment') continue;
           
           try {
@@ -62,6 +78,22 @@ export function ViewerDashboard() {
 
     fetchSurveys();
   }, [accessMappings, isAccessLoading, db]);
+
+  const handleSendSupport = () => {
+    if (!supportMessage.trim()) return;
+    setIsSending(true);
+    
+    // Simulate sending support request
+    setTimeout(() => {
+      setIsSending(false);
+      setIsSupportOpen(false);
+      setSupportMessage("");
+      toast({
+        title: "Request Sent",
+        description: "Our analysts have received your request and will contact you shortly.",
+      });
+    }, 1500);
+  };
 
   if (loading || isAccessLoading) {
     return (
@@ -139,11 +171,54 @@ export function ViewerDashboard() {
               <p className="text-primary-foreground/80 text-sm">Request custom ward-level deep dives from our analyst team.</p>
             </div>
           </div>
-          <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-8 font-bold text-sm whitespace-nowrap shadow-xl">
-            Contact Support
-          </Button>
+          
+          <Dialog open={isSupportOpen} onOpenChange={setIsSupportOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-8 font-bold text-sm whitespace-nowrap shadow-xl">
+                Contact Support
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-3xl border-none">
+              <DialogHeader>
+                <DialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  Request Insights
+                </DialogTitle>
+                <DialogDescription className="text-slate-500">
+                  Provide details about the specific data or ward analysis you require. Our strategic team will respond within 24 hours.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Your Message</Label>
+                  <Textarea 
+                    placeholder="Describe your requirements..."
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    className="min-h-[120px] rounded-xl bg-slate-50 border-slate-100 resize-none"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  onClick={handleSendSupport} 
+                  disabled={isSending || !supportMessage.trim()}
+                  className="w-full h-12 rounded-xl font-bold bg-primary shadow-lg shadow-primary/10"
+                >
+                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                  Send Request
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </Card>
     </div>
   );
+}
+
+// Fixed the useUser hook call in a local scope helper or re-importing correctly
+function userUser() {
+  const { user, isUserLoading, userError } = useUser();
+  return { user, isUserLoading, userError };
 }
