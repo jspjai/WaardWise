@@ -9,9 +9,10 @@ import {
   createAuthAccountSecondary, 
   useAuth,
   useUser,
-  deleteDocumentNonBlocking
+  errorEmitter,
+  FirestorePermissionError
 } from "@/firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -97,15 +98,19 @@ export function UserManagement() {
       toast({ title: "Action Restricted", description: "You cannot remove your own administrative access.", variant: "destructive" });
       return;
     }
-    if (!confirm("Are you sure you want to revoke access for this user? This action will remove their profile from the database.")) return;
+    if (!confirm("Are you sure you want to revoke access for this user? This action will permanently remove their profile.")) return;
     
     setDeletingId(id);
+    const userDocRef = doc(db, "users", id);
     try {
-      const userDocRef = doc(db, "users", id);
-      deleteDocumentNonBlocking(userDocRef);
-      toast({ title: "Access Revoked", description: "The user profile has been scheduled for deletion." });
-    } catch (error: any) {
-      toast({ title: "Deletion Error", description: error.message, variant: "destructive" });
+      await deleteDoc(userDocRef);
+      toast({ title: "Access Revoked", description: "The user profile has been successfully deleted." });
+    } catch (serverError: any) {
+      const permissionError = new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
     } finally {
       setDeletingId(null);
     }
@@ -121,7 +126,7 @@ export function UserManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="border-none shadow-sm h-fit rounded-3xl">
+        <Card className="border-none shadow-sm h-fit rounded-3xl bg-white">
           <CardHeader>
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-primary" />
@@ -133,27 +138,27 @@ export function UserManagement() {
               <Label className="text-[10px] font-bold uppercase text-slate-400">Full Name</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input placeholder="John Doe" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} className="pl-9 h-11 rounded-xl" />
+                <Input placeholder="John Doe" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-slate-400">Work Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input type="email" placeholder="name@trsgroup.com" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="pl-9 h-11 rounded-xl" />
+                <Input type="email" placeholder="name@trsgroup.com" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-slate-400">Set Initial Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input type="password" placeholder="Min 6 characters" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="pl-9 h-11 rounded-xl" />
+                <Input type="password" placeholder="Min 6 characters" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold uppercase text-slate-400">System Role</Label>
               <Select value={newUser.role} onValueChange={(val: Role) => setNewUser({...newUser, role: val})}>
-                <SelectTrigger className="h-11 rounded-xl">
+                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -170,12 +175,12 @@ export function UserManagement() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 border-none shadow-sm rounded-3xl overflow-hidden">
+        <Card className="lg:col-span-2 border-none shadow-sm rounded-3xl overflow-hidden bg-white">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50">
             <CardTitle className="text-lg font-bold">Authorized Personnel</CardTitle>
             <div className="relative w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input placeholder="Filter team..." className="pl-9 h-9 text-xs rounded-lg" />
+              <Input placeholder="Filter team..." className="pl-9 h-9 text-xs rounded-lg border-slate-100" />
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -184,7 +189,7 @@ export function UserManagement() {
             ) : (
               <Table>
                 <TableHeader className="bg-slate-50/50">
-                  <TableRow>
+                  <TableRow className="border-slate-50 hover:bg-transparent">
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 pl-6 py-4">Name</TableHead>
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Role</TableHead>
                     <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Email</TableHead>
@@ -197,7 +202,7 @@ export function UserManagement() {
                       <TableCell className="font-bold text-slate-900 pl-6">{u.name}</TableCell>
                       <TableCell>
                         <Badge className={cn(
-                          "uppercase text-[9px] font-black tracking-widest px-2",
+                          "uppercase text-[9px] font-black tracking-widest px-2 py-0.5",
                           u.role === 'ADMIN' ? 'bg-primary text-white' : 
                           u.role === 'SURVEYOR' ? 'bg-emerald-500 text-white' : 'bg-slate-400 text-white'
                         )}>{u.role}</Badge>
