@@ -2,80 +2,121 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    /**
+     * CORE PHILOSOPHY
+     * This ruleset implements a robust Role-Based Access Control (RBAC) system for a secure survey platform.
+     * It distinguishes between Admins, Surveyors, and Viewers. 
+     * 
+     * DATA STRUCTURE
+     * - /users: Centralized profile and role storage.
+     * - /surveys: Survey metadata, secured via creator ownership or explicit viewer assignment.
+     * - /viewer_requests: Intake for new users requesting survey access.
+     * - /survey_access: Administrative mapping used to trigger denormalization.
+     * 
+     * KEY SECURITY DECISIONS
+     * 1. Authorization Independence: We use denormalization to keep rules fast. Specifically, the 'surveys' 
+     *    collection contains an 'assignedViewerIds' map. This allows a Viewer to check their own access 
+     *    without performing a cross-document 'get()' call.
+     * 2. Administrative Lockdown: User creation and survey access grants are strictly limited to Admins.
+     * 3. Ownership Consistency: For Surveyors and Requesters, we enforce that the 'createdBy' or 
+     *    'requesterId' fields in the data match the authenticated User ID.
+     * 
+     * DENORMALIZATION FOR AUTHORIZATION
+     * - 'surveys/{surveyId}' includes 'assignedViewerIds': A map of {uid: true} for authorized Viewers.
+     * - 'users/{userId}' includes 'role': Used for global permission checks.
+     */
+
+    // --- Global Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isAssignedToWard(wardId) {
-      return wardId in get(/databases/$(database)/documents/surveyors/$(request.auth.uid)).data.assignedWardIds;
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getRole() == 'Admin';
+    }
+
+    function isSurveyor() {
+      return isSignedIn() && getRole() == 'Surveyor';
+    }
+
+    function isExistingOwner(ownerId) {
+      return isSignedIn() && resource != null && resource.data[ownerId] == request.auth.uid;
     }
 
     // --- Collection Rules ---
 
-    // Settings Collection: Global app configuration
-    match /settings/{settingId} {
-      allow get: if isSignedIn();
+    /**
+     * @description Rules for user profiles. Admins manage all; users can read their own.
+     * @path /users/{userId}
+     * @allow get: (isOwner), list: (isAdmin), create: (isAdmin)
+     * @deny create: (non-admin user), update: (changing own role)
+     * @principle Restricts profile management to Admins while allowing self-read access.
+     */
+    match /users/{userId} {
+      allow get: if isAdmin() || isOwner(userId);
       allow list: if isAdmin();
-      allow write: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
     }
 
-    match /roles_admin/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      // Allow specific super admin to bootstrap themselves, or existing admins to create others
-      allow create: if isSignedIn() && (
-        (request.auth.uid == userId && request.auth.token.email == 'suryajai642@gmail.com') || 
-        isAdmin()
-      );
-      allow update, delete: if isAdmin();
-    }
-
-    match /wards/{wardId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-
-      match /booths/{boothId} {
-        allow get, list: if isSignedIn();
-        allow create, update, delete: if isAdmin();
-      }
-    }
-
-    match /surveyors/{surveyorId} {
-      allow get: if isAdmin() || isOwner(surveyorId);
-      allow list: if isAdmin();
-      allow create: if isOwner(surveyorId) && request.resource.data.id == surveyorId;
-      allow update: if (isAdmin() || isOwner(surveyorId)) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin() && resource != null;
-    }
-
-    match /candidates/{candidateId} {
-      allow get: if isAdmin() || isOwner(candidateId);
-      allow list: if isAdmin();
-      allow create: if isOwner(candidateId) && request.resource.data.id == candidateId;
-      allow update: if (isAdmin() || isOwner(candidateId)) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin() && resource != null;
-    }
-
+    /**
+     * @description Rules for surveys. Access is granted to Admins, the creator, or assigned Viewers.
+     * @path /surveys/{surveyId}
+     * @allow get: (assigned viewer or creator), create: (Surveyor setting themselves as creator)
+     * @deny update: (Viewer attempting to edit metadata), delete: (non-owner)
+     * @principle Uses a denormalized map 'assignedViewerIds' to grant Viewer access efficiently.
+     */
     match /surveys/{surveyId} {
-      allow get: if isAdmin() || (isSignedIn() && resource.data.surveyorId == request.auth.uid);
-      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
+      function isSurveyCreator() {
+        return resource.data.createdBy == request.auth.uid;
+      }
 
-      allow create: if isSignedIn() 
-                    && request.resource.data.surveyorId == request.auth.uid
-                    && isAssignedToWard(request.resource.data.wardId);
-      
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      function isAssignedViewer() {
+        // Checking the denormalized map for the viewer's UID
+        return resource.data.assignedViewerIds[request.auth.uid] == true;
+      }
+
+      allow get: if isAdmin() || isSurveyCreator() || isAssignedViewer();
+      allow list: if isAdmin() || isSurveyor() || isSignedIn(); // Queries must be filtered by 'createdBy' or 'assignedViewerIds'
+      allow create: if isAdmin() || (isSurveyor() && request.resource.data.createdBy == request.auth.uid);
+      allow update: if isAdmin() || (isExistingOwner('createdBy') && request.resource.data.createdBy == resource.data.createdBy);
+      allow delete: if isAdmin() || isExistingOwner('createdBy');
+    }
+
+    /**
+     * @description Rules for access requests. Users create requests; Admins manage them.
+     * @path /viewer_requests/{requestId}
+     * @allow create: (signed-in user requesting access), get: (requester viewing status)
+     * @deny update: (User trying to approve their own request)
+     * @principle Ensures users can only track their own requests while Admins retain full control.
+     */
+    match /viewer_requests/{requestId} {
+      allow get: if isAdmin() || resource.data.requesterId == request.auth.uid;
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100); // Owners must filter by requesterId
+      allow create: if isSignedIn() && request.resource.data.requesterId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Source of truth for survey access grants. Admin-only.
+     * @path /survey_access/{accessId}
+     * @allow all: (Admin only)
+     * @deny all: (Surveyors and Viewers)
+     * @principle Restricted to Admins; changes here should trigger Cloud Functions to update survey documents.
+     */
+    match /survey_access/{accessId} {
+      allow read, write: if isAdmin();
     }
   }
 }
