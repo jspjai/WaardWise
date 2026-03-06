@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -76,7 +75,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     surveyDate: "" 
   });
 
-  // Handle dynamic date generation after hydration
+  // Handle dynamic date generation after hydration to avoid SSR mismatch
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
