@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -53,7 +52,9 @@ service cloud.firestore {
 
     // --- Survey Access Mapping ---
     match /survey_access/{accessId} {
-      allow read, write: if isAdmin();
+      // Allow viewers to read their own mappings to see what data they have access to
+      allow read: if isAdmin() || (isSignedIn() && resource.data.viewerId == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     // --- Roles Collections ---
