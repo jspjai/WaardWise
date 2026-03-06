@@ -110,8 +110,7 @@ export function SurveyForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!user || !db) return;
     
     setIsSubmitting(true);
@@ -144,7 +143,7 @@ export function SurveyForm() {
         <h1 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-slate-900 tracking-tight">Survey Submitted!</h1>
         <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved and is now being processed for ward analytics.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
+          <Button type="button" onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
             Start New Survey
           </Button>
         </div>
@@ -169,7 +168,7 @@ export function SurveyForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-6">
         <Card className="border-none shadow-xl shadow-slate-200/30 bg-white rounded-3xl overflow-hidden">
           <CardContent className="pt-8 pb-10 px-5 md:px-8">
             {step === 1 && (
@@ -453,7 +452,8 @@ export function SurveyForm() {
             </Button>
           ) : (
             <Button 
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={isSubmitting}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 md:h-14 font-bold shadow-lg shadow-emerald-200 transition-all hover:scale-[1.02]"
             >
@@ -462,7 +462,7 @@ export function SurveyForm() {
             </Button>
           )}
         </div>
-      </form>
+      </div>
     </div>
   );
 }
