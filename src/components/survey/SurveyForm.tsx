@@ -64,7 +64,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     gender: "Male",
     ageGroup: "26–40",
     languageSpokenAtHome: "Kannada",
-    yearsLivingInArea: "10+",
+    yearsLivingInArea: "10+ Years",
     householdMaleVoterCount: 1,
     householdFemaleVoterCount: 1,
     householdYouthVoterCount: 0,
@@ -77,10 +77,11 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     householdVoterMood: "Neutral",
     topIssue: "",
     notes: "",
-    surveyDate: ""
+    surveyDate: "" // Initialize empty to avoid hydration mismatch
   });
 
   useEffect(() => {
+    // Set survey date only on client side after initial hydration
     setFormData(prev => ({
       ...prev,
       surveyDate: new Date().toISOString()
@@ -100,7 +101,8 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     setStep((s) => Math.max(s - 1, 1));
   };
 
-  const handleAiAnalysis = async () => {
+  const handleAiAnalysis = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!formData.notes) return;
     setIsAnalyzing(true);
     try {
@@ -116,7 +118,8 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!user || !db) return;
     
     setIsSubmitting(true);
@@ -132,19 +135,20 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
       observerNotes: formData.notes
     };
 
-    addDocumentNonBlocking(surveysCol, surveyPayload);
-    
-    setTimeout(() => {
+    try {
+      await addDocumentNonBlocking(surveysCol, surveyPayload);
       setIsSubmitted(true);
-      setIsSubmitting(false);
       
-      // Auto-redirect to My Submissions after 3 seconds
       if (onNavigate) {
         setTimeout(() => {
           onNavigate("My Surveys");
         }, 3000);
       }
-    }, 800);
+    } catch (error) {
+      console.error("Submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -159,7 +163,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
           <Button 
             type="button" 
             onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} 
-            className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10"
+            className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/20"
           >
             Start New Survey
           </Button>
