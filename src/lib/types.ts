@@ -1,60 +1,41 @@
-export type Role = 'ADMIN' | 'SURVEYOR' | 'CANDIDATE';
 
-export interface User {
+export type Role = 'ADMIN' | 'SURVEYOR' | 'VIEWER';
+
+export interface UserProfile {
   id: string;
   name: string;
   email: string;
   role: Role;
-  wardId?: string;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
-export interface Ward {
+export interface Survey {
+  id: string;
+  title: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  wardId?: string;
+  boothNumber?: string;
+  data?: any;
+}
+
+export interface ViewerRequest {
   id: string;
   name: string;
-  district: string;
-  surveyCount: number;
-  unlocked?: boolean;
+  company: string;
+  email: string;
+  phone: string;
+  surveyRequested: string;
+  purpose: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  submittedAt: string;
 }
 
-export interface SurveySubmission {
+export interface SurveyAccess {
   id: string;
-  wardId: string;
-  boothNumber: string;
-  date: string;
-  surveyorId: string;
-  demographics: {
-    gender: string;
-    ageGroup: string;
-    residenceType: string;
-    yearsLiving: string;
-  };
-  community: {
-    language: string;
-    group?: string;
-    affiliations: string[];
-  };
-  voters: {
-    maleCount: number;
-    femaleCount: number;
-    youthCount: number;
-    behavior: string;
-  };
-  issues: {
-    water: string;
-    roads: string;
-    drainage: string;
-    garbage: string;
-    safety: string;
-    topIssue: string;
-  };
-  sentiment: string;
-  notes: string;
-}
-
-export interface SentimentAnalysis {
-  keyLocalIssues: string[];
-  overallSentiment: 'Positive' | 'Neutral' | 'Negative';
-  detailedSentiment: { aspect: string; sentiment: string }[];
-  emergingTrends: string[];
-  summary: string;
+  viewerId: string;
+  surveyId: string;
+  assignedAt: string;
+  expiryDate?: string;
 }

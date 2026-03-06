@@ -1,95 +1,78 @@
+
 {
   "entities": {
-    "AdminProfile": {
-      "title": "AdminProfile",
+    "UserProfile": {
+      "title": "UserProfile",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["ADMIN"] }
+        "role": { "type": "string", "enum": ["ADMIN", "SURVEYOR", "VIEWER"] },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE"] }
       },
       "required": ["id", "email", "role"]
-    },
-    "SurveyorProfile": {
-      "title": "SurveyorProfile",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "assignedWardIds": { "type": "array", "items": { "type": "string" } },
-        "isActive": { "type": "boolean" }
-      },
-      "required": ["id", "name", "email", "isActive"]
-    },
-    "CandidateProfile": {
-      "title": "CandidateProfile",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "purchasedWardIds": { "type": "array", "items": { "type": "string" } }
-      },
-      "required": ["id", "email"]
-    },
-    "Ward": {
-      "title": "Ward",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "district": { "type": "string" },
-        "surveyCount": { "type": "number" },
-        "price": { "type": "number" },
-        "isAvailableForPurchase": { "type": "boolean" }
-      },
-      "required": ["id", "name", "district"]
     },
     "Survey": {
       "title": "Survey",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
         "wardId": { "type": "string" },
-        "boothNumber": { "type": "string" },
-        "surveyorId": { "type": "string" },
-        "respondentName": { "type": "string" },
-        "householdVoterMood": { "type": "string", "enum": ["Pro-change", "Neutral", "Pro-continuity"] },
-        "topIssue": { "type": "string" },
-        "notes": { "type": "string" },
-        "submissionTimestamp": { "type": "string", "format": "date-time" }
+        "data": { "type": "object" }
       },
-      "required": ["wardId", "surveyorId", "submissionTimestamp"]
+      "required": ["title", "createdBy", "createdAt"]
+    },
+    "ViewerRequest": {
+      "title": "ViewerRequest",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "company": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "surveyRequested": { "type": "string" },
+        "purpose": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "status"]
+    },
+    "SurveyAccess": {
+      "title": "SurveyAccess",
+      "type": "object",
+      "properties": {
+        "viewerId": { "type": "string" },
+        "surveyId": { "type": "string" },
+        "assignedAt": { "type": "string", "format": "date-time" },
+        "expiryDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["viewerId", "surveyId"]
     }
   },
   "auth": {
     "providers": ["password"]
   },
   "firestore": {
-    "/roles_admin/{userId}": {
-      "schema": "AdminProfile",
-      "description": "Administrative users with full platform access."
-    },
-    "/surveyors/{userId}": {
-      "schema": "SurveyorProfile",
-      "description": "Field surveyors collecting ward-level data."
-    },
-    "/candidates/{userId}": {
-      "schema": "CandidateProfile",
-      "description": "Political candidates accessing purchased ward intelligence."
-    },
-    "/wards/{wardId}": {
-      "schema": "Ward",
-      "description": "Ward-level geographic and pricing information."
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "System users with designated roles."
     },
     "/surveys/{surveyId}": {
       "schema": "Survey",
-      "description": "Collected survey data points from field operations."
+      "description": "Collected survey data and metadata."
     },
-    "/settings/{docId}": {
-      "schema": "object",
-      "description": "Global platform configuration settings."
+    "/viewer_requests/{requestId}": {
+      "schema": "ViewerRequest",
+      "description": "Access requests from prospective viewers."
+    },
+    "/survey_access/{accessId}": {
+      "schema": "SurveyAccess",
+      "description": "Mapping of viewers to specific survey datasets."
     }
   }
 }

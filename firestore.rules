@@ -1,85 +1,53 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * TRS Group | Ward Intelligence Portal Security Rules
-     * 
-     * Implementations:
-     * - Role-Based Access Control (RBAC) via dedicated collections.
-     * - Initialization path for the Super Admin (suryajai642@gmail.com).
-     * - Ownership-based access for field surveyors.
-     * - Assignment-based access for candidates (unlocked wards).
-     */
-
-    // --- Global Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isSuperAdminEmail() {
-      return isSignedIn() && request.auth.token.email == 'suryajai642@gmail.com';
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isAdmin() {
       return isSignedIn() && 
-        exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/roles_admin/$(request.auth.uid)).data.role == 'ADMIN';
+        (getUserData().role == 'ADMIN' || request.auth.token.email == 'suryajai642@gmail.com');
     }
 
-    // --- Collection Rules ---
+    function isSurveyor() {
+      return isSignedIn() && getUserData().role == 'SURVEYOR';
+    }
 
-    // Admins Collection
-    match /roles_admin/{userId} {
-      // Users can always check their own admin status
-      allow get: if isOwner(userId) || isSuperAdminEmail();
-      // Only the super admin email can create the first admin doc for themselves
-      allow create: if isSuperAdminEmail() && isOwner(userId);
-      // Admins can manage all admin records
+    function isViewer() {
+      return isSignedIn() && getUserData().role == 'VIEWER';
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin() || (request.auth.token.email == 'suryajai642@gmail.com' && request.auth.uid == userId);
+    }
+
+    // --- Surveys Collection ---
+    match /surveys/{surveyId} {
+      allow read: if isAdmin() || 
+                  (isSurveyor() && resource.data.createdBy == request.auth.uid) ||
+                  (isViewer() && exists(/databases/$(database)/documents/survey_access/$(request.auth.uid + '_' + surveyId)));
+      allow create: if isAdmin() || isSurveyor();
+      allow update, delete: if isAdmin() || (isSurveyor() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // --- Viewer Requests ---
+    match /viewer_requests/{requestId} {
+      allow create: if true; // Public access
       allow read, write: if isAdmin();
     }
 
-    // Surveyors Collection
-    match /surveyors/{userId} {
-      // Owners can check their own status even if they aren't admins yet
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow write: if isAdmin();
-    }
-
-    // Candidates Collection
-    match /candidates/{userId} {
-      // Owners can check their own status even if they aren't admins yet
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
-    }
-
-    // Wards Collection
-    match /wards/{wardId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    // Surveys Collection
-    match /surveys/{surveyId} {
-      // Surveyors can read/write their own; Admins can do everything
-      allow get: if isSignedIn() && (resource.data.surveyorId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn(); 
-      allow create: if isSignedIn(); 
-      allow update: if isAdmin() || (resource.data.surveyorId == request.auth.uid);
-      allow delete: if isAdmin();
-    }
-
-    // Settings Collection
-    match /settings/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    // --- Survey Access Mapping ---
+    match /survey_access/{accessId} {
+      allow read, write: if isAdmin();
     }
   }
 }
