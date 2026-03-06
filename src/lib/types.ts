@@ -25,6 +25,7 @@ export interface ViewerRequest {
   name: string;
   company: string;
   email: string;
+  password?: string; // Stored temporarily for account creation upon approval
   phone: string;
   surveyRequested: string;
   purpose: string;
