@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc, updateDoc, setDoc, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, doc, updateDoc, setDoc, query, getDocs, limit } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +48,7 @@ export function ViewerRequests() {
     if (!req.password) {
       toast({ 
         title: "Missing Credentials", 
-        description: "This request does not contain a password. Please contact the applicant or create the account manually in User Management.", 
+        description: "Password data missing. Use User Management to create this account manually.", 
         variant: "destructive" 
       });
       return;
@@ -57,23 +56,27 @@ export function ViewerRequests() {
 
     setProcessingId(req.id);
     try {
-      // 1. Create Auth Account
-      let uid: string;
+      // 1. Attempt to create Auth Account
+      let uid: string = "";
       try {
         uid = await createAuthAccountSecondary(req.email, req.password);
       } catch (authError: any) {
         if (authError.code === 'auth/email-already-in-use') {
-          // If already exists, we might need to find the existing UID
-          // For simplicity in this demo flow, we assume the admin handles duplicates manually
-          // or we can try to look up the user if we had a dedicated search tool.
-          throw authError;
+          // If already exists, we can't get the UID from here safely.
+          // We'll toast and let the admin handle it.
+          toast({ 
+            title: "User Exists", 
+            description: "An account with this email already exists in Firebase Auth. Please assign roles in User Management.", 
+            variant: "destructive" 
+          });
+          setProcessingId(null);
+          return;
         }
         throw authError;
       }
       
       // 2. Create User Profile
-      const userDocRef = doc(db, "users", uid);
-      await setDoc(userDocRef, {
+      await setDoc(doc(db, "users", uid), {
         id: uid,
         name: req.name,
         email: req.email,
@@ -82,16 +85,9 @@ export function ViewerRequests() {
         createdAt: new Date().toISOString()
       });
 
-      // 3. Automated Data Assignment (Day 0 Feature)
-      // We look for a survey that might match the request interest or just create a mapping
-      // For now, we create a SurveyAccess record even if surveyId is just a descriptive string
-      // so the ViewerDashboard has a record to find.
-      
-      // Try to find any existing survey to assign as a default
+      // 3. Automated Data Assignment
       const surveysRef = collection(db, "surveys");
-      const sampleSurveyQuery = query(surveysRef, limit(1));
-      const sampleSnap = await getDocs(sampleSurveyQuery);
-      
+      const sampleSnap = await getDocs(query(surveysRef, limit(1)));
       const targetSurveyId = !sampleSnap.empty ? sampleSnap.docs[0].id : "default-assignment";
 
       const accessId = `${uid}_${targetSurveyId}`;
@@ -103,20 +99,11 @@ export function ViewerRequests() {
       });
 
       // 4. Mark Request as Approved
-      const reqDocRef = doc(db, "viewer_requests", req.id);
-      await updateDoc(reqDocRef, { status: 'APPROVED' });
+      await updateDoc(doc(db, "viewer_requests", req.id), { status: 'APPROVED' });
       
-      toast({ title: "Account Created & Authorized", description: `Viewer account for ${req.name} is now active with initial data.` });
+      toast({ title: "Account Created", description: `Viewer account for ${req.name} is now active.` });
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        toast({ 
-          title: "Email Already Exists", 
-          description: "An account with this email already exists in Auth. Please handle role assignment in User Management.", 
-          variant: "destructive" 
-        });
-      } else {
-        toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
-      }
+      toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
     } finally {
       setProcessingId(null);
     }
@@ -124,16 +111,11 @@ export function ViewerRequests() {
 
   const handleReject = async (id: string) => {
     if (!db) return;
-    const docRef = doc(db, "viewer_requests", id);
     try {
-      await updateDoc(docRef, { status: 'REJECTED' });
+      await updateDoc(doc(db, "viewer_requests", id), { status: 'REJECTED' });
       toast({ title: "Request Rejected" });
-    } catch (serverError: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'update',
-        requestResourceData: { status: 'REJECTED' }
-      }));
+    } catch (error: any) {
+      toast({ title: "Action Failed", variant: "destructive" });
     }
   };
 
@@ -144,9 +126,8 @@ export function ViewerRequests() {
 
   const handleConfirmDelete = () => {
     if (!db || !requestToDelete) return;
-    const docRef = doc(db, "viewer_requests", requestToDelete.id);
-    deleteDocumentNonBlocking(docRef);
-    toast({ title: "Request Removed", description: "Application history deleted." });
+    deleteDocumentNonBlocking(doc(db, "viewer_requests", requestToDelete.id));
+    toast({ title: "Request Removed" });
     setDeleteDialogOpen(false);
     setRequestToDelete(null);
   };
@@ -169,7 +150,7 @@ export function ViewerRequests() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="border-slate-50">
                   <TableHead className="text-[10px] uppercase font-bold text-slate-400 pl-6 py-4">Applicant</TableHead>
-                  <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Interest & Purpose</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Interest</TableHead>
                   <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4">Status</TableHead>
                   <TableHead className="text-[10px] uppercase font-bold text-slate-400 py-4 text-right pr-6">Action</TableHead>
                 </TableRow>
@@ -211,7 +192,7 @@ export function ViewerRequests() {
                             onClick={() => handleApproveAndCreate(req)}
                           >
                             {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
-                            {processingId === req.id ? "Creating..." : "Approve & Create"}
+                            Approve
                           </Button>
                           <Button 
                             size="sm" 
@@ -219,21 +200,19 @@ export function ViewerRequests() {
                             className="text-rose-600 hover:bg-rose-50 h-9 rounded-xl font-bold" 
                             onClick={() => handleReject(req.id)}
                           >
-                            <XCircle className="w-4 h-4 mr-1" /> Reject
+                            Reject
                           </Button>
                         </>
                       ) : (
                         <div className="flex items-center justify-end gap-2 text-slate-300">
                           <Clock className="w-3 h-3" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest">
-                            Processed {new Date(req.submittedAt).toLocaleDateString()}
-                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest">Processed</span>
                         </div>
                       )}
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-9 w-9 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        className="h-9 w-9 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100" 
                         onClick={() => triggerDelete(req)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -241,13 +220,6 @@ export function ViewerRequests() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!requests?.length && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-24 text-slate-400 uppercase text-xs font-bold tracking-widest">
-                      No access requests pending
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
@@ -259,22 +231,15 @@ export function ViewerRequests() {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-headline font-bold text-xl flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-rose-500" />
-              Remove Access Request?
+              Remove Request?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 text-sm">
-              Are you sure you want to delete the request from <strong>{requestToDelete?.name}</strong>? 
-              This will remove their application history permanently.
+              Delete history for <strong>{requestToDelete?.name}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel className="rounded-xl h-12 font-bold border-slate-100">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="rounded-xl h-12 px-8 font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg shadow-rose-100"
-            >
-              <Trash2 className="mr-2 w-4 h-4" />
-              Confirm Delete
-            </AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="rounded-xl bg-destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

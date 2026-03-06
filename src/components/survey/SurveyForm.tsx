@@ -287,7 +287,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
                         <SelectValue placeholder="Residency Duration" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="< 1 Year">&lt; 1 Year</SelectItem>
+                        <SelectItem value="&lt; 1 Year">&lt; 1 Year</SelectItem>
                         <SelectItem value="1-5 Years">1-5 Years</SelectItem>
                         <SelectItem value="5-10 Years">5-10 Years</SelectItem>
                         <SelectItem value="10+ Years">10+ Years</SelectItem>
@@ -413,7 +413,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Field Observer Notes</Label>
                   <Textarea 
-                    placeholder="Observations about household attitude or specific complaints..." 
+                    placeholder="Observations..." 
                     value={formData.notes}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     className="min-h-[160px] md:min-h-[200px] resize-none bg-slate-50 border-slate-100 rounded-2xl p-4 text-sm leading-relaxed" 
