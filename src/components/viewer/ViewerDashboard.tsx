@@ -2,10 +2,9 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDoc, doc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Lock, Loader2, Database } from "lucide-react";
@@ -17,75 +16,95 @@ export function ViewerDashboard() {
   const [assignedSurveys, setAssignedSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Get Access Mappings
+  // 1. Get Access Mappings for this viewer
   const accessQuery = useMemoFirebase(() => {
     if (!user || !db) return null;
     return query(collection(db, "survey_access"), where("viewerId", "==", user.uid));
   }, [db, user]);
 
-  const { data: accessMappings } = useCollection<SurveyAccess>(accessQuery);
+  const { data: accessMappings, isLoading: isAccessLoading } = useCollection<SurveyAccess>(accessQuery);
 
   // 2. Fetch Actual Surveys based on mappings
   useEffect(() => {
-    if (!accessMappings || !db) {
-      if (accessMappings === null) setLoading(false);
+    if (!db || isAccessLoading) return;
+
+    if (!accessMappings || accessMappings.length === 0) {
+      setAssignedSurveys([]);
+      setLoading(false);
       return;
     }
 
     const fetchSurveys = async () => {
       setLoading(true);
-      const surveys: Survey[] = [];
-      for (const mapping of accessMappings) {
-        const docRef = doc(db, "surveys", mapping.surveyId);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          surveys.push({ id: snap.id, ...snap.data() } as Survey);
+      try {
+        const surveys: Survey[] = [];
+        for (const mapping of accessMappings) {
+          const docRef = doc(db, "surveys", mapping.surveyId);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            surveys.push({ id: snap.id, ...snap.data() } as Survey);
+          }
         }
+        setAssignedSurveys(surveys);
+      } catch (error) {
+        console.error("Error fetching viewer surveys:", error);
+      } finally {
+        setLoading(false);
       }
-      setAssignedSurveys(surveys);
-      setLoading(false);
     };
 
     fetchSurveys();
-  }, [accessMappings, db]);
+  }, [accessMappings, isAccessLoading, db]);
+
+  if (loading || isAccessLoading) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-slate-400">
+        <Loader2 className="animate-spin w-10 h-10 text-primary" />
+        <p className="text-xs font-bold uppercase tracking-widest">Validating Authorized Datasets...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Your Data Portfolio</h1>
-        <p className="text-slate-500 text-sm mt-1">Authorized datasets assigned to your organization.</p>
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">Your Data Portfolio</h1>
+          <p className="text-slate-500 text-sm mt-1">Authorized datasets assigned to your organization.</p>
+        </div>
+        <Badge variant="outline" className="border-emerald-100 text-emerald-600 bg-emerald-50 px-3 py-1 font-bold">
+          {assignedSurveys.length} ACTIVE DATASETS
+        </Badge>
       </div>
 
-      {loading ? (
-        <div className="p-20 flex flex-col items-center gap-4 text-slate-400">
-          <Loader2 className="animate-spin w-10 h-10" />
-          <p className="text-xs font-bold uppercase tracking-widest">Validating Credentials...</p>
-        </div>
-      ) : assignedSurveys.length > 0 ? (
+      {assignedSurveys.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {assignedSurveys.map(s => (
-            <Card key={s.id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden bg-white">
-              <div className="h-2 bg-primary/20" />
+            <Card key={s.id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden bg-white rounded-3xl group">
+              <div className="h-2 bg-primary/20 group-hover:bg-primary transition-colors" />
               <CardHeader className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-primary border-primary/20 bg-primary/5">Assigned</Badge>
                   <FileText className="w-5 h-5 text-slate-200" />
                 </div>
-                <CardTitle className="text-xl font-bold">{s.title}</CardTitle>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed italic">{s.description || "Comprehensive ward-level voter sentiment analysis."}</p>
+                <CardTitle className="text-xl font-headline font-bold text-slate-900 leading-tight">{s.title || "Voter Sentiment Report"}</CardTitle>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed line-clamp-2">
+                  {s.description || `Voter data for ${s.wardId || 'Target Ward'} - Compiled on ${new Date(s.createdAt).toLocaleDateString()}`}
+                </p>
               </CardHeader>
               <CardContent className="p-6 pt-0">
-                <div className="flex items-center gap-6 py-4 border-y border-slate-50 mb-6">
+                <div className="flex items-center gap-6 py-4 border-y border-slate-50 mb-6 bg-slate-50/30 rounded-xl px-4">
                   <div className="text-center flex-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Records</p>
-                    <p className="text-lg font-black text-slate-900">4,200</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Status</p>
+                    <p className="text-xs font-black text-emerald-600 uppercase">Live</p>
                   </div>
-                  <div className="text-center flex-1 border-l border-slate-50">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Format</p>
-                    <p className="text-lg font-black text-slate-900 uppercase">PDF</p>
+                  <div className="w-px h-8 bg-slate-100" />
+                  <div className="text-center flex-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Format</p>
+                    <p className="text-xs font-black text-slate-900 uppercase">Intelligence</p>
                   </div>
                 </div>
-                <Button className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-200">
+                <Button className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200/50 transition-all hover:scale-[1.02]">
                   <Download className="w-4 h-4 mr-2" />
                   Access Full Dataset
                 </Button>
@@ -94,29 +113,30 @@ export function ViewerDashboard() {
           ))}
         </div>
       ) : (
-        <Card className="border-dashed border-2 bg-transparent text-center p-20">
+        <Card className="border-dashed border-2 border-slate-200 bg-white/50 text-center p-20 rounded-3xl">
           <Lock className="w-12 h-12 text-slate-200 mx-auto mb-4" />
           <h3 className="font-bold text-slate-400 uppercase text-xs tracking-widest">No Active Assignments</h3>
           <p className="text-sm text-slate-400 mt-2 max-w-sm mx-auto">Your organization currently has no active survey data mappings. Contact your account manager for authorization.</p>
         </Card>
       )}
 
-      <Card className="border-none shadow-sm bg-primary text-white p-8 rounded-3xl">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+      <Card className="border-none shadow-sm bg-primary text-white p-8 rounded-3xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
               <Database className="w-7 h-7 text-white" />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-xl font-bold">Need additional insights?</h3>
+            <div className="space-y-1 text-center md:text-left">
+              <h3 className="text-xl font-headline font-bold">Need additional insights?</h3>
               <p className="text-primary-foreground/80 text-sm">Request custom ward-level deep dives from our analyst team.</p>
             </div>
           </div>
-          <Button className="bg-white text-primary hover:bg-white/90 rounded-xl h-12 px-8 font-bold text-sm">Contact Support</Button>
+          <Button className="bg-white text-primary hover:bg-slate-100 rounded-xl h-12 px-8 font-bold text-sm whitespace-nowrap shadow-xl">
+            Contact Support
+          </Button>
         </div>
       </Card>
     </div>
   );
 }
-
-import { getDoc, doc } from "firebase/firestore";
