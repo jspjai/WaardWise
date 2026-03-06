@@ -1,11 +1,15 @@
+
 "use client";
 
+import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
   MoreVertical, 
@@ -18,23 +22,106 @@ import {
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function SurveyorsManagement() {
   const db = useFirestore();
+  const { toast } = useToast();
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [newSurveyor, setNewSurveyor] = useState({ uid: "", name: "", email: "", wardId: "ward-80" });
+
   const surveyorsQuery = useMemoFirebase(() => collection(db, "surveyors"), [db]);
   const { data: surveyors, isLoading } = useCollection(surveyorsQuery);
 
+  const handleInviteSurveyor = async () => {
+    if (!db || !newSurveyor.uid || !newSurveyor.name || !newSurveyor.email) {
+      toast({ title: "Validation Error", description: "All fields are required.", variant: "destructive" });
+      return;
+    }
+    try {
+      await setDoc(doc(db, "surveyors", newSurveyor.uid), {
+        id: newSurveyor.uid,
+        name: newSurveyor.name,
+        email: newSurveyor.email,
+        assignedWardIds: [newSurveyor.wardId],
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: "Surveyor Invited", description: `${newSurveyor.name} has been added to the field team.` });
+      setIsInviteDialogOpen(false);
+      setNewSurveyor({ uid: "", name: "", email: "", wardId: "ward-80" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">Surveyors</h1>
           <p className="text-sm text-slate-500 mt-1">Manage field teams and performance tracking.</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-          <UserPlus className="w-4 h-4 mr-2" />
-          Invite Surveyor
-        </Button>
+        
+        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Invite Surveyor
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] rounded-3xl border-none">
+            <DialogHeader>
+              <DialogTitle className="font-headline font-bold text-xl">Register Field Surveyor</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Grant field access to a new surveyor by their User ID.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Surveyor UID</Label>
+                <Input 
+                  placeholder="Firebase User UID" 
+                  value={newSurveyor.uid}
+                  onChange={(e) => setNewSurveyor({...newSurveyor, uid: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</Label>
+                <Input 
+                  placeholder="Enter Name" 
+                  value={newSurveyor.name}
+                  onChange={(e) => setNewSurveyor({...newSurveyor, name: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</Label>
+                <Input 
+                  placeholder="name@trsgroup.com" 
+                  value={newSurveyor.email}
+                  onChange={(e) => setNewSurveyor({...newSurveyor, email: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleInviteSurveyor} className="w-full bg-primary rounded-xl font-bold h-12 shadow-lg shadow-primary/10">
+                Authorize Surveyor
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

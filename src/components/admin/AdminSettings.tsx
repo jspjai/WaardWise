@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, writeBatch, collection, query, orderBy, limit, getDoc } from "firebase/firestore";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { doc, writeBatch, collection, query, orderBy, limit, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
@@ -30,26 +31,56 @@ import {
   ArrowRight,
   ShieldAlert,
   ShieldCheck,
-  Fingerprint
+  Fingerprint,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function AdminSettings() {
   const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [securityStatus, setSecurityStatus] = useState<"IDLE" | "SUCCESS" | "ERROR">("IDLE");
   const [activeTab, setActiveTab] = useState("general");
   const { toast } = useToast();
   const db = useFirestore();
   const { user } = useUser();
 
+  // Invite Admin State
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ uid: "", email: "", name: "" });
+
+  // General Settings State
+  const settingsRef = useMemoFirebase(() => db ? doc(db, "settings", "global") : null, [db]);
+  const { data: globalSettings, isLoading: isSettingsLoading } = useDoc(settingsRef);
+  const [localSettings, setLocalSettings] = useState({ companyName: "", opsEmail: "", aiEnabled: true });
+
+  useEffect(() => {
+    if (globalSettings) {
+      setLocalSettings({
+        companyName: globalSettings.companyName || "TRS Group",
+        opsEmail: globalSettings.opsEmail || "ops@trsgroup.com",
+        aiEnabled: globalSettings.aiEnabled ?? true
+      });
+    }
+  }, [globalSettings]);
+
   // Data for Manage Admins
   const adminsQuery = useMemoFirebase(() => collection(db, "roles_admin"), [db]);
   const { data: admins, isLoading: isAdminsLoading } = useCollection(adminsQuery);
 
-  // Data for Audit Logs (Using recent surveys as activity events)
+  // Data for Audit Logs
   const auditLogsQuery = useMemoFirebase(() => 
     query(collection(db, "surveys"), orderBy("createdAt", "desc"), limit(20)), 
     [db]
@@ -75,6 +106,58 @@ export function AdminSettings() {
       toast({ title: "Access Denied", description: error.message, variant: "destructive" });
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const handleSaveGeneral = async () => {
+    if (!db) return;
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        ...localSettings,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      toast({ title: "Settings Saved", description: "Global configuration has been updated." });
+    } catch (error: any) {
+      toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInviteAdmin = async () => {
+    if (!db || !newAdmin.uid || !newAdmin.email || !newAdmin.name) {
+      toast({ title: "Validation Error", description: "All fields are required.", variant: "destructive" });
+      return;
+    }
+    try {
+      await setDoc(doc(db, "roles_admin", newAdmin.uid), {
+        id: newAdmin.uid,
+        email: newAdmin.email,
+        name: newAdmin.name,
+        role: "ADMIN",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: "Admin Invited", description: `${newAdmin.name} is now an administrator.` });
+      setIsInviteDialogOpen(false);
+      setNewAdmin({ uid: "", email: "", name: "" });
+    } catch (error: any) {
+      toast({ title: "Invite Failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteAdmin = async (adminId: string) => {
+    if (adminId === user?.uid) {
+      toast({ title: "Action Restricted", description: "You cannot remove your own administrative permissions.", variant: "destructive" });
+      return;
+    }
+    if (!confirm("Are you sure you want to remove this administrator?")) return;
+    try {
+      await deleteDoc(doc(db, "roles_admin", adminId));
+      toast({ title: "Admin Removed", description: "Administrative access revoked." });
+    } catch (error: any) {
+      toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
     }
   };
 
@@ -165,11 +248,19 @@ export function AdminSettings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Name</Label>
-                    <Input defaultValue="TRS Group" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                    <Input 
+                      value={localSettings.companyName}
+                      onChange={(e) => setLocalSettings({...localSettings, companyName: e.target.value})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Operations Email</Label>
-                    <Input defaultValue="ops@trsgroup.com" className="bg-slate-50 border-slate-100 h-12 rounded-xl" />
+                    <Input 
+                      value={localSettings.opsEmail}
+                      onChange={(e) => setLocalSettings({...localSettings, opsEmail: e.target.value})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
                   </div>
                 </div>
 
@@ -186,12 +277,19 @@ export function AdminSettings() {
                         <p className="text-sm font-bold text-slate-900">AI Auto-Extraction</p>
                         <p className="text-[11px] text-slate-500 font-medium">Process surveyor field notes using Gemini instantly.</p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch 
+                        checked={localSettings.aiEnabled}
+                        onCheckedChange={(checked) => setLocalSettings({...localSettings, aiEnabled: checked})}
+                      />
                    </div>
                 </div>
 
-                <Button className="w-full h-12 rounded-xl font-bold bg-primary shadow-lg shadow-primary/20" onClick={() => toast({ title: "Configuration Updated", description: "General settings saved to cloud." })}>
-                  <Save className="w-4 h-4 mr-2" />
+                <Button 
+                  className="w-full h-12 rounded-xl font-bold bg-primary shadow-lg shadow-primary/20" 
+                  onClick={handleSaveGeneral}
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save Changes
                 </Button>
               </CardContent>
@@ -202,10 +300,56 @@ export function AdminSettings() {
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-slate-50 p-6 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-headline font-bold">Platform Administrators</CardTitle>
-                <Button size="sm" className="rounded-xl h-9 font-bold bg-primary/10 text-primary hover:bg-primary/20" onClick={() => toast({ title: "Restricted", description: "Use Firebase Console to manage Super Admin credentials." })}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite Admin
-                </Button>
+                <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="rounded-xl h-9 font-bold bg-primary text-white shadow-sm">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Invite Admin
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] rounded-3xl border-none">
+                    <DialogHeader>
+                      <DialogTitle className="font-headline font-bold text-xl">Authorize New Administrator</DialogTitle>
+                      <DialogDescription className="text-xs text-slate-500">
+                        Grant administrative privileges by providing the user's details.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">User ID (UID)</Label>
+                        <Input 
+                          placeholder="Firebase User UID" 
+                          value={newAdmin.uid}
+                          onChange={(e) => setNewAdmin({...newAdmin, uid: e.target.value})}
+                          className="rounded-xl bg-slate-50 border-slate-100"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</Label>
+                        <Input 
+                          placeholder="Admin Full Name" 
+                          value={newAdmin.name}
+                          onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
+                          className="rounded-xl bg-slate-50 border-slate-100"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Work Email</Label>
+                        <Input 
+                          placeholder="email@trsgroup.com" 
+                          value={newAdmin.email}
+                          onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+                          className="rounded-xl bg-slate-50 border-slate-100"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleInviteAdmin} className="w-full bg-primary rounded-xl font-bold h-12 shadow-lg shadow-primary/10">
+                        Confirm Authorization
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent className="p-0">
                 {isAdminsLoading ? (
@@ -214,7 +358,7 @@ export function AdminSettings() {
                   <Table>
                     <TableHeader className="bg-slate-50/50">
                       <TableRow className="border-slate-50 hover:bg-transparent">
-                        <TableHead className="text-[10px] font-black uppercase py-4 tracking-widest text-slate-400">Name</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase py-4 tracking-widest text-slate-400 pl-6">Name</TableHead>
                         <TableHead className="text-[10px] font-black uppercase py-4 tracking-widest text-slate-400">Role</TableHead>
                         <TableHead className="text-[10px] font-black uppercase py-4 tracking-widest text-slate-400">Email</TableHead>
                         <TableHead className="text-[10px] font-black uppercase py-4 tracking-widest text-slate-400 text-right pr-6">Action</TableHead>
@@ -231,7 +375,12 @@ export function AdminSettings() {
                           </TableCell>
                           <TableCell className="text-xs text-slate-500 font-medium">{admin.email}</TableCell>
                           <TableCell className="text-right pr-6">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50" onClick={() => toast({ title: "Action Blocked", description: "Super Admin privileges cannot be modified from the client.", variant: "destructive" })}>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50" 
+                              onClick={() => handleDeleteAdmin(admin.id)}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </TableCell>
@@ -273,7 +422,7 @@ export function AdminSettings() {
                           <TableCell className="text-xs font-bold text-slate-700 pl-6">
                              <div className="flex items-center gap-2">
                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                               Survey Sync
+                               Survey Submission
                              </div>
                           </TableCell>
                           <TableCell className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
@@ -289,7 +438,7 @@ export function AdminSettings() {
                       ))}
                       {!recentActivity?.length && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-16 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Zero activity logs recorded in current epoch</TableCell>
+                          <TableCell colSpan={4} className="text-center py-16 text-slate-400 font-bold uppercase text-[10px] tracking-widest">Zero activity logs recorded</TableCell>
                         </TableRow>
                       )}
                     </TableBody>

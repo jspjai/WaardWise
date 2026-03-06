@@ -1,11 +1,15 @@
+
 "use client";
 
+import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Map, 
   Search, 
@@ -19,10 +23,22 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Ward } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function WardsBooths() {
   const db = useFirestore();
-  
+  const { toast } = useToast();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newWard, setNewWard] = useState({ id: "", name: "", district: "", price: 5000 });
+
   const wardsQuery = useMemoFirebase(() => {
     if (!db) return null;
     return collection(db, "wards");
@@ -30,17 +46,85 @@ export function WardsBooths() {
 
   const { data: wards, isLoading } = useCollection<Ward>(wardsQuery);
 
+  const handleAddWard = async () => {
+    if (!db || !newWard.id || !newWard.name || !newWard.district) {
+      toast({ title: "Validation Error", description: "All fields are required.", variant: "destructive" });
+      return;
+    }
+    try {
+      await setDoc(doc(db, "wards", newWard.id), {
+        ...newWard,
+        surveyCount: 0,
+        isAvailableForPurchase: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: "Ward Added", description: `${newWard.name} has been created.` });
+      setIsAddDialogOpen(false);
+      setNewWard({ id: "", name: "", district: "", price: 5000 });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-slate-900 tracking-tight">Wards & Booths</h1>
           <p className="text-sm text-slate-500 mt-1">Manage geographic targets and polling station data.</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Ward
-        </Button>
+        
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Ward
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px] rounded-3xl border-none">
+            <DialogHeader>
+              <DialogTitle className="font-headline font-bold text-xl">Create New Ward</DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Define a new geographic administrative unit.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ward ID (e.g. ward-85)</Label>
+                <Input 
+                  placeholder="Unique ID" 
+                  value={newWard.id}
+                  onChange={(e) => setNewWard({...newWard, id: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ward Name</Label>
+                <Input 
+                  placeholder="e.g. Indiranagar East" 
+                  value={newWard.name}
+                  onChange={(e) => setNewWard({...newWard, name: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">District</Label>
+                <Input 
+                  placeholder="e.g. Bengaluru Central" 
+                  value={newWard.district}
+                  onChange={(e) => setNewWard({...newWard, district: e.target.value})}
+                  className="rounded-xl bg-slate-50 border-slate-100"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleAddWard} className="w-full bg-primary rounded-xl font-bold h-12 shadow-lg shadow-primary/10">
+                Create Ward Record
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
