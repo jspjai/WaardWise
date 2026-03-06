@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, arrayUnion } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,11 +21,14 @@ import {
 import { Ward } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { WardAnalysis } from "./WardAnalysis";
+import { useToast } from "@/hooks/use-toast";
 
 export function CandidatePortal() {
   const db = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState<string | null>(null);
 
   const wardsQuery = useMemoFirebase(() => collection(db, "wards"), [db]);
   const { data: wards, isLoading } = useCollection<Ward>(wardsQuery);
@@ -33,6 +38,32 @@ export function CandidatePortal() {
 
   const isUnlocked = (wardId: string) => {
     return candidateProfile?.purchasedWardIds?.includes(wardId) || false;
+  };
+
+  const handleUnlockWard = async (wardId: string, wardName: string) => {
+    if (!user || !db) return;
+    setIsUnlocking(wardId);
+    
+    try {
+      // In a real app, this would involve a payment gateway. 
+      // Here we simulate the successful purchase by updating the candidate profile.
+      updateDocumentNonBlocking(doc(db, "candidates", user.uid), {
+        purchasedWardIds: arrayUnion(wardId)
+      });
+      
+      toast({
+        title: "Ward Unlocked",
+        description: `You now have full access to ${wardName} intelligence data.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Unlock Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsUnlocking(null);
+    }
   };
 
   if (selectedWard) {
@@ -72,6 +103,8 @@ export function CandidatePortal() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {wards?.map((ward) => {
             const unlocked = isUnlocked(ward.id);
+            const unlocking = isUnlocking === ward.id;
+            
             return (
               <Card key={ward.id} className={cn(
                 "group border-none shadow-sm transition-all duration-300 overflow-hidden bg-white", 
@@ -135,9 +168,14 @@ export function CandidatePortal() {
                         </div>
                       </>
                     ) : (
-                      <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-white rounded-xl font-bold h-12 transition-all">
-                        <Unlock className="w-4 h-4 mr-2" />
-                        Unlock Data
+                      <Button 
+                        variant="outline" 
+                        disabled={unlocking}
+                        onClick={() => handleUnlockWard(ward.id, ward.name)}
+                        className="w-full border-primary text-primary hover:bg-primary hover:text-white rounded-xl font-bold h-12 transition-all"
+                      >
+                        {unlocking ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
+                        {unlocking ? "Processing..." : `Unlock for ₹${ward.price || 5000}`}
                       </Button>
                     )}
                   </div>

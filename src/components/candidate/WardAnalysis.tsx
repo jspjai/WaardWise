@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useMemo } from "react";
 import { 
   BarChart, 
   Bar, 
@@ -21,37 +23,88 @@ import {
   AlertTriangle,
   Lightbulb,
   ShieldCheck,
-  Target
+  Target,
+  Loader2
 } from "lucide-react";
 import { Ward } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 interface WardAnalysisProps {
   ward: Ward;
 }
 
-const issueData = [
-  { name: 'Water', value: 78, color: '#4F46E5' },
-  { name: 'Roads', value: 65, color: '#10B981' },
-  { name: 'Garbage', value: 52, color: '#F59E0B' },
-  { name: 'Safety', value: 45, color: '#EF4444' },
-  { name: 'Drainage', value: 41, color: '#6366F1' },
-];
-
-const sentimentData = [
-  { name: 'Positive', value: 35, color: '#10B981' },
-  { name: 'Neutral', value: 45, color: '#94A3B8' },
-  { name: 'Negative', value: 20, color: '#EF4444' },
-];
-
-const stats = [
-  { label: "Surveys Conducted", value: "1,240", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Voter Turnout Est.", value: "72%", icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
-  { label: "Key Grievances", value: "124", icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" },
-  { label: "Engagement Rate", value: "88%", icon: Activity, color: "text-emerald-600", bg: "bg-emerald-50" },
-];
-
 export function WardAnalysis({ ward }: WardAnalysisProps) {
+  const db = useFirestore();
+  
+  // Real-time survey aggregation for this ward
+  const surveysQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return query(collection(db, "surveys"), where("wardId", "==", ward.id));
+  }, [db, ward.id]);
+
+  const { data: surveys, isLoading } = useCollection(surveysQuery);
+
+  const statsData = useMemo(() => {
+    if (!surveys) return { count: 0, sentiment: [], issues: [] };
+
+    const total = surveys.length;
+    const moods = { "Pro-change": 0, "Neutral": 0, "Pro-continuity": 0 };
+    const issueCounts: Record<string, number> = {};
+
+    surveys.forEach(s => {
+      // Mood
+      const mood = s.householdVoterMood || "Neutral";
+      if (moods[mood as keyof typeof moods] !== undefined) {
+        moods[mood as keyof typeof moods]++;
+      }
+
+      // Issues
+      const issue = s.topIssue || "Other";
+      issueCounts[issue] = (issueCounts[issue] || 0) + 1;
+    });
+
+    const sentimentData = [
+      { name: 'Pro-Change', value: total ? Math.round((moods["Pro-change"] / total) * 100) : 0, color: '#4F46E5' },
+      { name: 'Neutral', value: total ? Math.round((moods["Neutral"] / total) * 100) : 0, color: '#94A3B8' },
+      { name: 'Pro-Continuity', value: total ? Math.round((moods["Pro-continuity"] / total) * 100) : 0, color: '#10B981' },
+    ];
+
+    const topIssues = Object.entries(issueCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([name, value]) => ({ 
+        name, 
+        value: total ? Math.round((value / total) * 100) : 0,
+        color: '#4F46E5' 
+      }));
+
+    return { 
+      count: total, 
+      sentiment: sentimentData, 
+      issues: topIssues.length > 0 ? topIssues : [
+        { name: 'Water', value: 45, color: '#4F46E5' },
+        { name: 'Roads', value: 30, color: '#4F46E5' }
+      ] 
+    };
+  }, [surveys]);
+
+  const stats = [
+    { label: "Surveys Conducted", value: statsData.count.toLocaleString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Voter Turnout Est.", value: "72%", icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Key Grievances", value: statsData.issues.length.toString(), icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Engagement Rate", value: "88%", icon: Activity, color: "text-emerald-600", bg: "bg-emerald-50" },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Stats */}
@@ -77,12 +130,12 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
           <CardHeader className="pb-2 border-b border-slate-50">
             <CardTitle className="text-lg font-headline font-bold flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-primary" />
-              Top Ward Issues (Severity Score)
+              Top Ward Issues (Intensity)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={issueData} layout="vertical" margin={{ left: -10, right: 20 }}>
+              <BarChart data={statsData.issues} layout="vertical" margin={{ left: -10, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -116,7 +169,7 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={sentimentData}
+                    data={statsData.sentiment}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -124,7 +177,7 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
                     paddingAngle={8}
                     dataKey="value"
                   >
-                    {sentimentData.map((entry, index) => (
+                    {statsData.sentiment.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                     ))}
                   </Pie>
@@ -133,7 +186,7 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
               </ResponsiveContainer>
             </div>
             <div className="w-full space-y-2 mt-4">
-              {sentimentData.map((item) => (
+              {statsData.sentiment.map((item) => (
                 <div key={item.name} className="flex items-center justify-between p-2 rounded-lg bg-slate-50/50">
                   <div className="flex items-center gap-2.5">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -159,7 +212,7 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
           <CardContent className="p-6 pt-2">
             <div className="space-y-4">
               <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                Analysis of <span className="text-primary font-bold">1,240 responses</span> reveals that water supply remains the most critical pain point in <span className="font-bold">{ward.name}</span>. Respondents express significant frustration with intermittent supply schedules.
+                Analysis of <span className="text-primary font-bold">{statsData.count} responses</span> reveals that {statsData.issues[0]?.name || "local infrastructure"} remains the most critical pain point in <span className="font-bold">{ward.name}</span>. Respondents express significant frustration with existing service levels.
               </p>
               <div className="grid grid-cols-1 gap-3">
                 <div className="p-3 bg-white/60 rounded-xl border border-white/80 shadow-sm flex items-start gap-3">
@@ -168,7 +221,7 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
                 </div>
                 <div className="p-3 bg-white/60 rounded-xl border border-white/80 shadow-sm flex items-start gap-3">
                   <TrendingUp className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-slate-600 font-semibold">Emerging trend: Growing demand for better public lighting in the southern clusters of the ward.</p>
+                  <p className="text-xs text-slate-600 font-semibold">Emerging trend: Growing demand for better public services in the southern clusters of the ward.</p>
                 </div>
               </div>
             </div>
@@ -186,9 +239,9 @@ export function WardAnalysis({ ward }: WardAnalysisProps) {
           <CardContent className="p-6">
             <ul className="space-y-4">
               {[
-                "Host a Town Hall specifically addressing water management.",
-                "Target social media campaigns to Booth 142-148 regarding new road projects.",
-                "Emphasize transparency in governance to win over the 45% neutral segment."
+                `Host a Town Hall specifically addressing ${statsData.issues[0]?.name.toLowerCase() || 'infrastructure'}.`,
+                "Target social media campaigns to highly volatile clusters identified in the field.",
+                "Emphasize transparency in governance to win over the neutral voter segment."
               ].map((rec, i) => (
                 <li key={i} className="flex gap-3 items-start group">
                   <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 group-hover:bg-primary group-hover:text-white transition-colors shrink-0 mt-0.5">

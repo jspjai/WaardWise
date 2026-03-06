@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -55,7 +56,17 @@ export function AdminSettings() {
         createdAt: new Date().toISOString()
       });
 
-      // 2. Create initial Wards
+      // 2. Initialize the candidate profile for the super admin (for testing)
+      batch.set(doc(db, "candidates", user.uid), {
+        id: user.uid,
+        name: user.email === 'suryajai642@gmail.com' ? "Super Admin" : "Candidate User",
+        email: user.email,
+        role: "CANDIDATE",
+        purchasedWardIds: [],
+        createdAt: new Date().toISOString()
+      });
+
+      // 3. Create initial Wards
       const wards = [
         { 
           id: "ward-80", 
@@ -97,7 +108,7 @@ export function AdminSettings() {
       
       toast({
         title: "System Bootstrapped",
-        description: "Initial wards and your Super Admin role have been successfully initialized.",
+        description: "Initial wards and your Admin credentials have been successfully initialized.",
       });
     } catch (error: any) {
       toast({

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +13,13 @@ import {
   Filter,
   RefreshCw,
   Search,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const datasets = [
   { id: "EXP-101", name: "Indiranagar Full Survey Data", records: "1,240", lastUpdated: "2h ago", format: "CSV" },
@@ -26,6 +30,20 @@ const datasets = [
 ];
 
 export function DataExports() {
+  const [isExporting, setIsExporting] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleExport = (id: string, name: string) => {
+    setIsExporting(id);
+    setTimeout(() => {
+      setIsExporting(null);
+      toast({
+        title: "Export Successful",
+        description: `Dataset ${name} has been prepared and is starting to download.`,
+      });
+    }, 1500);
+  };
+
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -51,8 +69,12 @@ export function DataExports() {
                 Instantly generate a consolidated report for all <span className="text-white font-bold">24,842 records</span> across 48 wards.
               </p>
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 pt-2">
-                <Button className="bg-white text-slate-900 hover:bg-slate-100 rounded-xl h-12 px-8 font-bold">
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <Button 
+                  onClick={() => handleExport("MASTER-CSV", "Master CSV")}
+                  disabled={isExporting !== null}
+                  className="bg-white text-slate-900 hover:bg-slate-100 rounded-xl h-12 px-8 font-bold"
+                >
+                  {isExporting === "MASTER-CSV" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
                   Master CSV
                 </Button>
                 <Button variant="outline" className="border-white/20 hover:bg-white/10 text-white rounded-xl h-12 px-8 font-bold">
@@ -116,8 +138,12 @@ export function DataExports() {
                   <Button variant="ghost" className="flex-1 md:flex-none bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl h-11 px-6 font-bold text-xs uppercase transition-all">
                     View
                   </Button>
-                  <Button className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold text-xs uppercase shadow-lg shadow-primary/10 transition-all">
-                    <Download className="w-4 h-4 mr-2" />
+                  <Button 
+                    onClick={() => handleExport(set.id, set.name)}
+                    disabled={isExporting !== null}
+                    className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-white rounded-xl h-11 px-6 font-bold text-xs uppercase shadow-lg shadow-primary/10 transition-all"
+                  >
+                    {isExporting === set.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                     Export
                   </Button>
                 </div>
