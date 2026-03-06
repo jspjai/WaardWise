@@ -37,7 +37,7 @@ service cloud.firestore {
     // Admins Collection
     match /roles_admin/{userId} {
       // Users can always check their own admin status
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isSuperAdminEmail();
       // Only the super admin email can create the first admin doc for themselves
       allow create: if isSuperAdminEmail() && isOwner(userId);
       // Admins can manage all admin records
@@ -46,6 +46,7 @@ service cloud.firestore {
 
     // Surveyors Collection
     match /surveyors/{userId} {
+      // Owners can check their own status even if they aren't admins yet
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow write: if isAdmin();
@@ -53,6 +54,7 @@ service cloud.firestore {
 
     // Candidates Collection
     match /candidates/{userId} {
+      // Owners can check their own status even if they aren't admins yet
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow write: if isOwner(userId) || isAdmin();
@@ -68,8 +70,8 @@ service cloud.firestore {
     match /surveys/{surveyId} {
       // Surveyors can read/write their own; Admins can do everything
       allow get: if isSignedIn() && (resource.data.surveyorId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn(); // Queries are expected to be filtered by surveyorId or wardId
-      allow create: if isSignedIn(); // Validation of surveyorId field happens in application
+      allow list: if isSignedIn(); 
+      allow create: if isSignedIn(); 
       allow update: if isAdmin() || (resource.data.surveyorId == request.auth.uid);
       allow delete: if isAdmin();
     }
