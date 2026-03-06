@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useFirestore, useUser } from "@/firebase";
-import { doc, writeBatch } from "firebase/firestore";
+import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, writeBatch, collection, query, orderBy, limit } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
@@ -22,9 +22,16 @@ import {
   Loader2,
   DatabaseZap,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Users,
+  History,
+  Trash2,
+  Mail,
+  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 export function AdminSettings() {
   const [isBootstrapping, setIsBootstrapping] = useState(false);
@@ -32,6 +39,17 @@ export function AdminSettings() {
   const { toast } = useToast();
   const db = useFirestore();
   const { user } = useUser();
+
+  // Data for Manage Admins
+  const adminsQuery = useMemoFirebase(() => collection(db, "roles_admin"), [db]);
+  const { data: admins, isLoading: isAdminsLoading } = useCollection(adminsQuery);
+
+  // Data for Audit Logs (Mocked using recent surveys/activity)
+  const auditLogsQuery = useMemoFirebase(() => 
+    query(collection(db, "surveys"), orderBy("createdAt", "desc"), limit(10)), 
+    [db]
+  );
+  const { data: recentActivity } = useCollection(auditLogsQuery);
 
   const handleBootstrap = async () => {
     if (!db || !user) {
@@ -47,7 +65,6 @@ export function AdminSettings() {
     try {
       const batch = writeBatch(db);
 
-      // 1. Ensure current user is an admin
       batch.set(doc(db, "roles_admin", user.uid), {
         id: user.uid,
         email: user.email,
@@ -57,7 +74,6 @@ export function AdminSettings() {
         updatedAt: new Date().toISOString()
       });
 
-      // 2. Initialize the candidate profile for the super admin (for testing)
       batch.set(doc(db, "candidates", user.uid), {
         id: user.uid,
         name: user.email === 'suryajai642@gmail.com' ? "Super Admin" : "Candidate User",
@@ -68,7 +84,6 @@ export function AdminSettings() {
         updatedAt: new Date().toISOString()
       });
 
-      // 3. Create initial Wards
       const wards = [
         { 
           id: "ward-80", 
@@ -116,7 +131,7 @@ export function AdminSettings() {
       console.error("Bootstrap error:", error);
       toast({
         title: "Bootstrap Failed",
-        description: error.message || "An unexpected error occurred during database initialization.",
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive"
       });
     } finally {
@@ -124,26 +139,13 @@ export function AdminSettings() {
     }
   };
 
-  const handleSaveConfig = () => {
-    toast({
-      title: "Changes Applied",
-      description: "Application configuration has been updated successfully.",
-    });
-  };
-
-  const handleSecurityAction = (action: string) => {
-    toast({
-      title: "Restricted Access",
-      description: `The '${action}' module is currently syncing with the security cloud.`,
-    });
-  };
-
   const navItems = [
     { id: "general", label: "General Config", icon: Settings },
+    { id: "admins", label: "Manage Admins", icon: UserCheck },
+    { id: "logs", label: "Audit Logs", icon: History },
     { id: "security", label: "Security & Auth", icon: Shield },
     { id: "data", label: "Data Pipeline", icon: Database },
     { id: "notifications", label: "Alerts & Notifications", icon: Bell },
-    { id: "localization", label: "Ward Localization", icon: Globe },
   ];
 
   return (
@@ -161,7 +163,7 @@ export function AdminSettings() {
               onClick={() => setActiveTab(item.id)}
               className={cn(
                 "w-full flex items-center justify-between p-4 rounded-2xl transition-all font-bold text-sm text-left",
-                activeTab === item.id ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:bg-slate-50"
+                activeTab === item.id ? "bg-white shadow-sm text-primary border-l-4 border-primary" : "text-slate-500 hover:bg-slate-50"
               )}
             >
               <div className="flex items-center gap-3">
@@ -207,6 +209,93 @@ export function AdminSettings() {
                       <Switch defaultChecked />
                    </div>
                 </div>
+                <Button className="w-full h-12 rounded-xl font-bold bg-primary" onClick={() => toast({ title: "Saved", description: "Config updated."})}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Update Branding
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "admins" && (
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-50 p-6 flex flex-row items-center justify-between">
+                <CardTitle className="text-lg font-headline font-bold">Platform Administrators</CardTitle>
+                <Button size="sm" className="rounded-xl h-9 font-bold bg-primary/10 text-primary hover:bg-primary/20" onClick={() => toast({ title: "Restricted", description: "Use Firebase Console to invite new admins directly for security." })}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Invite Admin
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isAdminsLoading ? (
+                  <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-slate-50/50">
+                      <TableRow className="border-slate-50">
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Name</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Role</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4">Email</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase py-4 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {admins?.map((admin: any) => (
+                        <TableRow key={admin.id} className="border-slate-50">
+                          <TableCell className="font-bold text-slate-900">{admin.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-primary/5">
+                              {admin.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 font-medium">{admin.email}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-50" onClick={() => toast({ title: "Unauthorized", description: "You cannot delete other Super Admins.", variant: "destructive" })}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "logs" && (
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-slate-50 p-6">
+                <CardTitle className="text-lg font-headline font-bold">System Audit Logs</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="border-slate-50">
+                      <TableHead className="text-[10px] font-bold uppercase py-4">Event</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4">User</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4">Timestamp</TableHead>
+                      <TableHead className="text-[10px] font-bold uppercase py-4 text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentActivity?.map((log: any) => (
+                      <TableRow key={log.id} className="border-slate-50">
+                        <TableCell className="text-xs font-bold text-slate-700">Survey Submission: {log.respondentName || 'Household'}</TableCell>
+                        <TableCell className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">ID: {log.surveyorId?.slice(0, 6)}</TableCell>
+                        <TableCell className="text-[10px] font-medium text-slate-500">{new Date(log.submissionTimestamp).toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[9px] font-bold">SUCCESS</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!recentActivity?.length && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-12 text-slate-400 font-bold uppercase text-[10px]">No recent activity logs</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}
@@ -251,7 +340,7 @@ export function AdminSettings() {
                   <CardContent className="p-6 flex flex-col gap-4">
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSecurityAction("Audit Logs")}
+                      onClick={() => setActiveTab("logs")}
                       className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
                     >
                         <Lock className="w-5 h-5 mr-3 text-primary" />
@@ -259,7 +348,7 @@ export function AdminSettings() {
                     </Button>
                     <Button 
                       variant="outline" 
-                      onClick={() => handleSecurityAction("Manage Admins")}
+                      onClick={() => setActiveTab("admins")}
                       className="h-16 rounded-2xl border-slate-100 bg-white font-bold text-slate-600 justify-start px-6 transition-all hover:bg-slate-50"
                     >
                         <UserCheck className="w-5 h-5 mr-3 text-emerald-500" />
@@ -279,36 +368,6 @@ export function AdminSettings() {
              </div>
           )}
 
-          {activeTab !== "data" && activeTab !== "security" && (
-            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-              <CardHeader className="border-b border-slate-50 p-6">
-                <CardTitle className="text-lg font-headline font-bold">System Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                 <Button 
-                    onClick={handleSaveConfig}
-                    className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-bold text-white shadow-lg shadow-primary/20 transition-all"
-                 >
-                    <Save className="w-5 h-5 mr-3" />
-                    Save Configuration
-                 </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === "localization" && (
-            <div className="bg-amber-50 border border-amber-100 p-8 rounded-3xl text-center space-y-4">
-              <Globe className="w-12 h-12 text-amber-500 mx-auto" />
-              <h3 className="font-headline font-bold text-amber-900">Localization Engine</h3>
-              <p className="text-sm text-amber-700 leading-relaxed max-w-sm mx-auto">
-                Automatic translation for field surveyors (Kannada, Telugu, Hindi) is currently being calibrated for your region.
-              </p>
-              <Button variant="outline" className="rounded-xl border-amber-200 text-amber-700 font-bold h-11" onClick={() => handleSecurityAction("Localization")}>
-                Configure Regions
-              </Button>
-            </div>
-          )}
-
           {activeTab === "notifications" && (
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-slate-50 p-6">
@@ -325,7 +384,7 @@ export function AdminSettings() {
                     <Switch />
                   </div>
                 </div>
-                <Button className="w-full rounded-xl h-12 font-bold" onClick={handleSaveConfig}>Update Preferences</Button>
+                <Button className="w-full rounded-xl h-12 font-bold" onClick={() => toast({ title: "Updated", description: "Preferences saved."})}>Update Preferences</Button>
               </CardContent>
             </Card>
           )}
