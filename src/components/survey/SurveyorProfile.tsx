@@ -19,16 +19,15 @@ import {
 import { cn } from "@/lib/utils";
 
 const performanceStats = [
-  { label: "Total Surveys", value: "142", target: "200", color: "bg-primary" },
-  { label: "Ward Coverage", value: "68%", target: "80%", color: "bg-emerald-500" },
-  { label: "Submission Rate", value: "98%", target: "100%", color: "bg-amber-500" },
+  { label: "Total Surveys", value: "0", target: "100", color: "bg-primary" },
+  { label: "Ward Coverage", value: "0%", target: "100%", color: "bg-emerald-500" },
+  { label: "Submission Rate", value: "0%", target: "100%", color: "bg-amber-500" },
 ];
 
 export function SurveyorProfile() {
   return (
     <div className="space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="flex flex-col md:flex-row gap-6 md:items-start">
-        {/* Profile Card */}
         <Card className="w-full md:w-80 border-none shadow-sm bg-white shrink-0 overflow-hidden rounded-2xl md:rounded-3xl">
           <div className="h-24 bg-primary/10 relative">
             <div className="absolute -bottom-12 left-6">
@@ -42,7 +41,7 @@ export function SurveyorProfile() {
           <CardContent className="pt-16 pb-8 px-6">
             <div className="flex justify-between items-start">
               <div className="min-w-0">
-                <h2 className="text-xl font-headline font-extrabold text-slate-900 tracking-tight truncate">John Doe</h2>
+                <h2 className="text-xl font-headline font-extrabold text-slate-900 tracking-tight truncate">User</h2>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Field Surveyor</p>
               </div>
               <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 shrink-0">
@@ -57,7 +56,7 @@ export function SurveyorProfile() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Email</p>
-                  <p className="text-xs font-bold text-slate-700 truncate">john.doe@wardwise.pro</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">Pending setup...</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -66,7 +65,7 @@ export function SurveyorProfile() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Phone</p>
-                  <p className="text-xs font-bold text-slate-700">+91 98765 43210</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">Not provided</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -75,7 +74,7 @@ export function SurveyorProfile() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Assigned Ward</p>
-                  <p className="text-xs font-bold text-slate-700 truncate">Indiranagar (Ward 80)</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">Awaiting assignment</p>
                 </div>
               </div>
             </div>
@@ -92,26 +91,25 @@ export function SurveyorProfile() {
           </CardContent>
         </Card>
 
-        {/* Stats & Progress */}
         <div className="flex-1 space-y-6 w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Efficiency</p>
-                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">94%</h3>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">0%</h3>
                 </div>
                 <div className="p-2.5 bg-primary/10 rounded-xl">
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
               </div>
-              <p className="text-[11px] text-emerald-600 font-bold mt-4">+3% from last week</p>
+              <p className="text-[11px] text-slate-400 font-bold mt-4">No data yet</p>
             </Card>
             <Card className="border-none shadow-sm bg-white p-5 group hover:shadow-md transition-all rounded-2xl">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submissions</p>
-                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">1,204</h3>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">0</h3>
                 </div>
                 <div className="p-2.5 bg-emerald-50 rounded-xl">
                   <FileText className="w-5 h-5 text-emerald-600" />
@@ -123,13 +121,13 @@ export function SurveyorProfile() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Rank</p>
-                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">Gold</h3>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">Bronze</h3>
                 </div>
                 <div className="p-2.5 bg-amber-50 rounded-xl">
                   <Award className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
-              <p className="text-[11px] text-amber-600 font-bold mt-4">Top 5% in Ward</p>
+              <p className="text-[11px] text-amber-600 font-bold mt-4">Start surveying to rank up</p>
             </Card>
           </div>
 

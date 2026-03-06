@@ -26,25 +26,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const data = [
-  { name: 'Water', value: 45, color: '#4F46E5' },
-  { name: 'Roads', value: 30, color: '#10B981' },
-  { name: 'Garbage', value: 20, color: '#F59E0B' },
-  { name: 'Safety', value: 15, color: '#EF4444' },
-  { name: 'Drainage', value: 25, color: '#6366F1' },
-];
+const data = [];
 
 const sentimentData = [
-  { name: 'Pro-Change', value: 42, color: '#4F46E5' },
-  { name: 'Neutral', value: 28, color: '#94A3B8' },
-  { name: 'Pro-Continuity', value: 30, color: '#10B981' },
+  { name: 'Pro-Change', value: 0, color: '#4F46E5' },
+  { name: 'Neutral', value: 0, color: '#94A3B8' },
+  { name: 'Pro-Continuity', value: 0, color: '#10B981' },
 ];
 
 const stats = [
-  { label: "Total Surveys", value: "24,842", icon: FileText, change: "+12.5%", positive: true },
-  { label: "Active Wards", value: "48", icon: MapPin, change: "+2", positive: true },
-  { label: "Field Surveyors", value: "156", icon: Users, change: "+12", positive: true },
-  { label: "Avg Sentiment", value: "Neutral", icon: Activity, change: "-3%", positive: false },
+  { label: "Total Surveys", value: "0", icon: FileText, change: "0%", positive: true },
+  { label: "Active Wards", value: "0", icon: MapPin, change: "0", positive: true },
+  { label: "Field Surveyors", value: "0", icon: Users, change: "0", positive: true },
+  { label: "Avg Sentiment", value: "N/A", icon: Activity, change: "0%", positive: true },
 ];
 
 export function AdminDashboard() {
@@ -105,18 +99,25 @@ export function AdminDashboard() {
             </select>
           </CardHeader>
           <CardContent className="p-4 md:p-6 h-[300px] md:h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }} 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                />
-                <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
+            {data.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc' }} 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                  />
+                  <Bar dataKey="value" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                <FileText className="w-8 h-8 opacity-20" />
+                <p className="text-xs font-bold uppercase tracking-widest">No issue data available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

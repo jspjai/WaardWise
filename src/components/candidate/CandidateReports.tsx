@@ -16,53 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const mockReports = [
-  {
-    id: "REP-2024-001",
-    name: "Ward 80 Weekly Sentiment Analysis",
-    ward: "Indiranagar",
-    date: "Mar 22, 2024",
-    type: "PDF",
-    status: "Ready",
-    size: "2.4 MB"
-  },
-  {
-    id: "REP-2024-002",
-    name: "Voter Demographic Deep Dive - HSR",
-    ward: "HSR Layout",
-    date: "Mar 20, 2024",
-    type: "CSV",
-    status: "Ready",
-    size: "1.8 MB"
-  },
-  {
-    id: "REP-2024-003",
-    name: "Issue Severity Index: Water Management",
-    ward: "Malleshwaram",
-    date: "Mar 18, 2024",
-    type: "PDF",
-    status: "Ready",
-    size: "3.1 MB"
-  },
-  {
-    id: "REP-2024-004",
-    name: "Candidate Benchmarking Report",
-    ward: "Indiranagar",
-    date: "Mar 15, 2024",
-    type: "PDF",
-    status: "Ready",
-    size: "4.5 MB"
-  },
-  {
-    id: "REP-2024-005",
-    name: "Community Engagement Trends Q1",
-    ward: "Multiple",
-    date: "Mar 10, 2024",
-    type: "PDF",
-    status: "Ready",
-    size: "5.2 MB"
-  }
-];
+const mockReports: any[] = [];
 
 export function CandidateReports() {
   return (
@@ -122,9 +76,13 @@ export function CandidateReports() {
             </CardContent>
           </Card>
         ))}
+        {mockReports.length === 0 && (
+          <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No reports generated yet</p>
+          </div>
+        )}
       </div>
 
-      {/* Quick Actions Card */}
       <Card className="border-none shadow-sm bg-slate-900 text-white rounded-2xl overflow-hidden mt-8">
         <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
