@@ -4,12 +4,12 @@
 import { useState } from "react";
 import { useFirestore } from "@/firebase";
 import { collection, addDoc } from "firebase/firestore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, CheckCircle2, ShieldCheck, Lock, Mail, User, Building2, Phone } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ShieldCheck, Mail, User, Building2, FileText, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface RequestAccessFormProps {
@@ -20,30 +20,31 @@ export function RequestAccessForm({ onBack }: RequestAccessFormProps) {
   const db = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: "",
-    company: "",
     email: "",
-    password: "",
-    phone: "",
+    password: "", // Temporary for account creation upon approval
+    company: "",
     surveyRequested: "",
     purpose: "",
+    phone: ""
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) return;
+    
     setIsSubmitting(true);
-
     try {
       await addDoc(collection(db, "viewer_requests"), {
         ...formData,
-        status: "PENDING",
-        submittedAt: new Date().toISOString(),
+        status: 'PENDING',
+        submittedAt: new Date().toISOString()
       });
-      setIsSuccess(true);
-      toast({ title: "Request Submitted", description: "An administrator will review your application shortly." });
+      setIsSubmitted(true);
+      toast({ title: "Request Submitted", description: "Our team will review your application shortly." });
     } catch (error: any) {
       toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
     } finally {
@@ -51,18 +52,18 @@ export function RequestAccessForm({ onBack }: RequestAccessFormProps) {
     }
   };
 
-  if (isSuccess) {
+  if (isSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <Card className="w-full max-w-md border-none shadow-2xl bg-white rounded-3xl overflow-hidden text-center p-10 space-y-6">
-          <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
-            <CheckCircle2 className="w-10 h-10" />
+        <Card className="w-full max-w-md border-none shadow-2xl bg-white rounded-3xl text-center p-10">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Request Received</h2>
-            <p className="text-slate-500 text-sm">Your application for viewer access has been submitted for review. You will be notified via email once approved.</p>
-          </div>
-          <Button onClick={onBack} className="w-full h-12 rounded-xl bg-primary">Back to Login</Button>
+          <h1 className="text-2xl font-bold mb-4">Request Sent!</h1>
+          <p className="text-sm text-slate-500 mb-8">Your access request is being processed. You will receive an email once an administrator approves your account.</p>
+          <Button onClick={onBack} className="w-full h-12 rounded-xl font-bold">
+            Back to Login
+          </Button>
         </Card>
       </div>
     );
@@ -71,122 +72,101 @@ export function RequestAccessForm({ onBack }: RequestAccessFormProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 py-12">
       <Card className="w-full max-w-lg border-none shadow-2xl bg-white rounded-3xl overflow-hidden">
-        <CardHeader className="space-y-4 pt-10 pb-6 text-center">
-          <div className="mx-auto w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white">
+        <CardHeader className="space-y-4 pt-10 pb-6 px-8">
+          <Button variant="ghost" onClick={onBack} className="w-fit h-9 px-2 text-slate-400 hover:text-primary mb-2">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Login
+          </Button>
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
             <ShieldCheck className="w-7 h-7" />
           </div>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-extrabold">Request Portal Access</CardTitle>
-            <CardDescription className="text-slate-500">Apply for a Viewer account to access ward datasets.</CardDescription>
+          <div className="text-center space-y-1">
+            <CardTitle className="text-2xl font-extrabold">Request Viewer Access</CardTitle>
+            <CardDescription className="text-slate-500">Apply for a secure organization portal account.</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="px-8 pb-10">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-400">Full Name</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Full Name</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
                     required 
-                    className="pl-9 h-11 rounded-xl" 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" 
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-400">Organization</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Work Email</Label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input 
-                    value={formData.company} 
-                    onChange={e => setFormData({...formData, company: e.target.value})} 
+                    type="email" 
                     required 
-                    className="pl-9 h-11 rounded-xl" 
+                    value={formData.email} 
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" 
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Desired Password</Label>
+              <Input 
+                type="password" 
+                required 
+                placeholder="Choose a secure password"
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})}
+                className="h-11 rounded-xl bg-slate-50 border-slate-100" 
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-400">Work Email</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Organization / Party</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
                     required 
-                    className="pl-9 h-11 rounded-xl" 
+                    value={formData.company} 
+                    onChange={e => setFormData({...formData, company: e.target.value})}
+                    className="pl-9 h-11 rounded-xl bg-slate-50 border-slate-100" 
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-slate-400">Phone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                  <Input 
-                    type="tel" 
-                    value={formData.phone} 
-                    onChange={e => setFormData({...formData, phone: e.target.value})} 
-                    required 
-                    className="pl-9 h-11 rounded-xl" 
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400">Choose Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Target Ward / Area</Label>
                 <Input 
-                  type="password" 
-                  placeholder="Min 6 characters"
-                  value={formData.password} 
-                  onChange={e => setFormData({...formData, password: e.target.value})} 
                   required 
-                  minLength={6}
-                  className="pl-9 h-11 rounded-xl" 
+                  placeholder="e.g. Ward 80"
+                  value={formData.surveyRequested} 
+                  onChange={e => setFormData({...formData, surveyRequested: e.target.value})}
+                  className="h-11 rounded-xl bg-slate-50 border-slate-100" 
                 />
               </div>
-              <p className="text-[10px] text-slate-400">This password will be used to log in once your request is approved.</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400">Interested Dataset / Ward</Label>
-              <Input 
-                placeholder="e.g. Indiranagar Ward 80"
-                value={formData.surveyRequested} 
-                onChange={e => setFormData({...formData, surveyRequested: e.target.value})} 
-                required 
-                className="h-11 rounded-xl" 
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase text-slate-400">Purpose of Access</Label>
+              <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Purpose of Access</Label>
               <Textarea 
-                placeholder="Briefly describe how you will use this data..."
-                value={formData.purpose} 
-                onChange={e => setFormData({...formData, purpose: e.target.value})} 
                 required 
-                className="rounded-xl min-h-[100px]" 
+                placeholder="Explain why your organization needs access to this intelligence data..."
+                value={formData.purpose} 
+                onChange={e => setFormData({...formData, purpose: e.target.value})}
+                className="min-h-[100px] rounded-xl bg-slate-50 border-slate-100 resize-none" 
               />
             </div>
 
-            <div className="flex flex-col gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-primary rounded-xl font-bold shadow-lg">
-                {isSubmitting ? "Submitting..." : "Submit Access Request"}
-                <Send className="w-4 h-4 ml-2" />
-              </Button>
-              <Button variant="ghost" type="button" onClick={onBack} className="w-full h-11 text-slate-500">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Login
-              </Button>
-            </div>
+            <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-primary rounded-xl font-bold shadow-lg shadow-primary/20">
+              {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}
+              Submit Application
+            </Button>
           </form>
         </CardContent>
       </Card>

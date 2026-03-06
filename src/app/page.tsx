@@ -1,7 +1,7 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Role } from "@/lib/types";
 import { useUser, useFirestore, useMemoFirebase, useDoc, useAuth } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { AppSidebar } from "@/components/shared/Sidebar";
@@ -12,7 +12,7 @@ import { SurveyForm } from "@/components/survey/SurveyForm";
 import { SurveyorSubmissions } from "@/components/survey/SurveyorSubmissions";
 import { ViewerDashboard } from "@/components/viewer/ViewerDashboard";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Loader2, ShieldCheck, UserPlus, LogOut, FileText } from "lucide-react";
+import { Loader2, ShieldCheck, UserPlus, LogOut } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RequestAccessForm } from "@/components/public/RequestAccessForm";
 import { Badge } from "@/components/ui/badge";
@@ -105,14 +105,13 @@ export default function Home() {
 
   const renderContent = () => {
     if (!userData) return null;
-    // Keys ensure fresh component mount when switching views
     switch (activeView) {
-      case "Dashboard": return <AdminDashboard key="Dashboard" />;
-      case "User Management": return <UserManagement key="User Management" />;
-      case "Viewer Requests": return <ViewerRequests key="Viewer Requests" />;
-      case "New Survey": return <SurveyForm key="New Survey" onNavigate={setActiveView} />;
-      case "My Surveys": return <SurveyorSubmissions key="My Surveys" />;
-      case "Assigned Data": return <ViewerDashboard key="Assigned Data" />;
+      case "Dashboard": return <AdminDashboard />;
+      case "User Management": return <UserManagement />;
+      case "Viewer Requests": return <ViewerRequests />;
+      case "New Survey": return <SurveyForm onNavigate={setActiveView} />;
+      case "My Surveys": return <SurveyorSubmissions />;
+      case "Assigned Data": return <ViewerDashboard />;
       default: return <div className="p-12 text-center text-slate-400 font-bold">SELECT A VIEW</div>;
     }
   };

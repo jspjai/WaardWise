@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,13 +16,9 @@ import {
   ChevronRight, 
   ChevronLeft, 
   CheckCircle2, 
-  FileText,
   Sparkles,
   Loader2,
   TrendingUp,
-  User,
-  MapPin,
-  AlertTriangle,
   History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,11 +73,11 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     householdVoterMood: "Neutral",
     topIssue: "",
     notes: "",
-    surveyDate: "" // Initialize empty to avoid hydration mismatch
+    surveyDate: "" 
   });
 
+  // Handle dynamic date generation after hydration
   useEffect(() => {
-    // Set survey date only on client side after initial hydration to avoid mismatch
     setFormData(prev => ({
       ...prev,
       surveyDate: new Date().toISOString()
@@ -90,12 +87,14 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
   const totalSteps = SECTIONS.length;
   const progress = (step / totalSteps) * 100;
 
-  const nextStep = () => {
+  const nextStep = (e: React.MouseEvent) => {
+    e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setStep((s) => Math.min(s + 1, totalSteps));
   };
   
-  const prevStep = () => {
+  const prevStep = (e: React.MouseEvent) => {
+    e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setStep((s) => Math.max(s - 1, 1));
   };
@@ -157,7 +156,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
           <CheckCircle2 className="w-10 h-10 text-emerald-600" />
         </div>
         <h1 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-slate-900 tracking-tight">Survey Submitted!</h1>
-        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved. You will be redirected to your submission history in a few seconds.</p>
+        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">The data has been securely saved. You will be redirected shortly.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button 
             type="button" 
@@ -422,7 +421,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
                   />
                 </div>
 
-                {formData.notes.length > 20 && (
+                {formData.notes.length > 10 && (
                   <Button 
                     type="button"
                     onClick={handleAiAnalysis}
