@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -273,7 +272,7 @@ export function SurveyorSubmissions() {
         </>
       )}
 
-      {/* Edit Dialog - Expanded for all 7 sections */}
+      {/* Edit Dialog - Full 7 section coverage */}
       <Dialog open={editDialogOpen} onOpenChange={handleCloseEdit}>
         <DialogContent className="max-w-3xl h-[90vh] flex flex-col rounded-3xl border-none">
           <DialogHeader className="px-6 pt-6">
@@ -442,6 +441,7 @@ export function SurveyorSubmissions() {
                         {SEVERITY_OPTIONS.map((opt) => (
                           <Button
                             key={opt}
+                            type="button"
                             variant={editData[issue.id] === opt ? "default" : "outline"}
                             size="sm"
                             onClick={() => setEditData({ ...editData, [issue.id]: opt })}

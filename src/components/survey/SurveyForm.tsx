@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -81,7 +80,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
   });
 
   useEffect(() => {
-    // Set survey date only on client side after initial hydration
+    // Set survey date only on client side after initial hydration to avoid mismatch
     setFormData(prev => ({
       ...prev,
       surveyDate: new Date().toISOString()
@@ -202,7 +201,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
         <Card className="border-none shadow-xl shadow-slate-200/30 bg-white rounded-3xl overflow-hidden">
           <CardContent className="pt-8 pb-10 px-5 md:px-8">
             {step === 1 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Ward ID</Label>
@@ -222,7 +221,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 2 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Address / House Number</Label>
                   <Input 
@@ -245,7 +244,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 3 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Gender</Label>
@@ -302,7 +301,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 4 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Male Voters</Label>
@@ -350,7 +349,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 5 && (
-              <div className="space-y-8">
+              <div className="space-y-8 animate-in fade-in duration-300">
                 {[
                   { id: "waterSupplySeverity", label: "Water Supply" },
                   { id: "roadsSeverity", label: "Road Quality" },
@@ -382,7 +381,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 6 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="space-y-4">
                   <Label className="text-sm font-bold text-slate-800">Political Sentiment</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -412,7 +411,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             )}
 
             {step === 7 && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Field Observer Notes</Label>
                   <Textarea 
@@ -436,7 +435,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
                 )}
 
                 {aiResult && (
-                  <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 space-y-4">
+                  <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 space-y-4 animate-in slide-in-from-top-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-primary" />

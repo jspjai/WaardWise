@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -106,7 +105,7 @@ export default function Home() {
 
   const renderContent = () => {
     if (!userData) return null;
-    // We add a key here to ensure fresh component mount when switching views
+    // Keys ensure fresh component mount when switching views
     switch (activeView) {
       case "Dashboard": return <AdminDashboard key="Dashboard" />;
       case "User Management": return <UserManagement key="User Management" />;
