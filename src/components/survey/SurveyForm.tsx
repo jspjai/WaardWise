@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -17,7 +18,10 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  User,
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { aiIssueSentimentExtractor, AiIssueSentimentExtractorOutput } from "@/ai/flows/ai-issue-sentiment-extractor";
@@ -32,6 +36,8 @@ const SECTIONS = [
   "Political Sentiment",
   "Field Notes"
 ];
+
+const SEVERITY_OPTIONS = ["Low", "Medium", "High"];
 
 export function SurveyForm() {
   const { user } = useUser();
@@ -51,14 +57,24 @@ export function SurveyForm() {
     houseNumberLandmark: "",
     gender: "Male",
     ageGroup: "26–40",
+    languageSpokenAtHome: "Kannada",
+    yearsLivingInArea: "10+",
+    householdMaleVoterCount: 1,
+    householdFemaleVoterCount: 1,
+    householdYouthVoterCount: 0,
+    votingBehavior: "Always vote",
+    waterSupplySeverity: "Medium",
+    roadsSeverity: "Medium",
+    drainageSeverity: "Medium",
+    garbageSeverity: "Medium",
+    safetySeverity: "Medium",
     householdVoterMood: "Neutral",
     topIssue: "",
     notes: "",
-    surveyDate: "" // Initialize as empty for hydration safety
+    surveyDate: ""
   });
 
   useEffect(() => {
-    // Set dynamic values only on the client after mount to avoid hydration mismatch
     setFormData(prev => ({
       ...prev,
       surveyDate: new Date().toISOString()
@@ -104,31 +120,11 @@ export function SurveyForm() {
     const surveyPayload = {
       ...formData,
       surveyorId: user.uid,
-      surveyDate: formData.surveyDate || new Date().toISOString(),
       submissionTimestamp: new Date().toISOString(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      socialNetworkAffiliations: [],
-      leadershipQualities: [],
-      yearsLivingInArea: "10+",
-      languageSpokenAtHome: "Kannada",
-      householdMaleVoterCount: 1,
-      householdFemaleVoterCount: 1,
-      householdYouthVoterCount: 0,
-      votingBehavior: "Always vote",
-      waterSupplySeverity: "Medium",
-      roadsSeverity: "Medium",
-      drainageSeverity: "Low",
-      garbageSeverity: "Medium",
-      safetySeverity: "Low",
-      wardDevelopmentSatisfaction: "Neutral",
-      leaderAccessibility: "Sometimes reachable",
-      womenSafetyPerception: "Safe",
-      mainWomenIssue: "Water",
-      visibleSocioEconomicStatus: "Middle",
-      keyLocalInfluenceFactor: "None",
-      observerNotes: formData.notes,
-      top1LocalIssue: formData.topIssue
+      top1LocalIssue: formData.topIssue,
+      observerNotes: formData.notes
     };
 
     addDocumentNonBlocking(surveysCol, surveyPayload);
@@ -148,7 +144,7 @@ export function SurveyForm() {
         <h1 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-slate-900 tracking-tight">Survey Submitted!</h1>
         <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved and is now being processed for ward analytics.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); setFormData({...formData, notes: "", topIssue: ""}); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
+          <Button onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
             Start New Survey
           </Button>
         </div>
@@ -216,6 +212,143 @@ export function SurveyForm() {
                     className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
                   />
                 </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100">
+                        <SelectValue placeholder="Select Gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Age Group</Label>
+                    <Select value={formData.ageGroup} onValueChange={(val) => setFormData({...formData, ageGroup: val})}>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100">
+                        <SelectValue placeholder="Select Age" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="18–25">18–25</SelectItem>
+                        <SelectItem value="26–40">26–40</SelectItem>
+                        <SelectItem value="41–60">41–60</SelectItem>
+                        <SelectItem value="60+">60+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Primary Language</Label>
+                    <Input 
+                      placeholder="e.g. Kannada" 
+                      value={formData.languageSpokenAtHome}
+                      onChange={(e) => setFormData({...formData, languageSpokenAtHome: e.target.value})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Years in Area</Label>
+                    <Select value={formData.yearsLivingInArea} onValueChange={(val) => setFormData({...formData, yearsLivingInArea: val})}>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100">
+                        <SelectValue placeholder="Residency Duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="< 1 Year">&lt; 1 Year</SelectItem>
+                        <SelectItem value="1-5 Years">1-5 Years</SelectItem>
+                        <SelectItem value="5-10 Years">5-10 Years</SelectItem>
+                        <SelectItem value="10+ Years">10+ Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Male Voters</Label>
+                    <Input 
+                      type="number"
+                      value={formData.householdMaleVoterCount}
+                      onChange={(e) => setFormData({...formData, householdMaleVoterCount: parseInt(e.target.value) || 0})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Female Voters</Label>
+                    <Input 
+                      type="number"
+                      value={formData.householdFemaleVoterCount}
+                      onChange={(e) => setFormData({...formData, householdFemaleVoterCount: parseInt(e.target.value) || 0})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Youth Voters</Label>
+                    <Input 
+                      type="number"
+                      value={formData.householdYouthVoterCount}
+                      onChange={(e) => setFormData({...formData, householdYouthVoterCount: parseInt(e.target.value) || 0})}
+                      className="bg-slate-50 border-slate-100 h-12 rounded-xl" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Voting Behavior</Label>
+                  <Select value={formData.votingBehavior} onValueChange={(val) => setFormData({...formData, votingBehavior: val})}>
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Always vote">Always vote</SelectItem>
+                      <SelectItem value="Sometimes vote">Sometimes vote</SelectItem>
+                      <SelectItem value="Rarely vote">Rarely vote</SelectItem>
+                      <SelectItem value="Never vote">Never vote</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="space-y-8">
+                {[
+                  { id: "waterSupplySeverity", label: "Water Supply" },
+                  { id: "roadsSeverity", label: "Road Quality" },
+                  { id: "drainageSeverity", label: "Drainage System" },
+                  { id: "garbageSeverity", label: "Garbage Management" },
+                  { id: "safetySeverity", label: "Public Safety" }
+                ].map((issue) => (
+                  <div key={issue.id} className="space-y-3">
+                    <Label className="text-sm font-bold text-slate-800">{issue.label} Concern Level</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SEVERITY_OPTIONS.map((opt) => (
+                        <Button
+                          key={opt}
+                          type="button"
+                          variant={formData[issue.id as keyof typeof formData] === opt ? "default" : "outline"}
+                          onClick={() => setFormData({...formData, [issue.id]: opt})}
+                          className={cn(
+                            "h-11 rounded-xl text-xs font-bold uppercase transition-all",
+                            formData[issue.id as keyof typeof formData] === opt ? "shadow-md" : "bg-slate-50/50"
+                          )}
+                        >
+                          {opt}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -291,15 +424,6 @@ export function SurveyForm() {
                     <p className="text-xs text-slate-600 leading-relaxed italic">"{aiResult.summary}"</p>
                   </div>
                 )}
-              </div>
-            )}
-
-            {![1, 2, 6, 7].includes(step) && (
-              <div className="py-12 text-center space-y-4">
-                <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                   <FileText className="w-6 h-6 text-slate-300" />
-                </div>
-                <p className="text-sm font-bold text-slate-400">Demographic data collection for Section {step}</p>
               </div>
             )}
 
