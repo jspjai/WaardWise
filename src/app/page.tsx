@@ -106,13 +106,14 @@ export default function Home() {
 
   const renderContent = () => {
     if (!userData) return null;
+    // We add a key here to ensure fresh component mount when switching views
     switch (activeView) {
-      case "Dashboard": return <AdminDashboard />;
-      case "User Management": return <UserManagement />;
-      case "Viewer Requests": return <ViewerRequests />;
-      case "New Survey": return <SurveyForm />;
-      case "My Surveys": return <SurveyorSubmissions />;
-      case "Assigned Data": return <ViewerDashboard />;
+      case "Dashboard": return <AdminDashboard key="Dashboard" />;
+      case "User Management": return <UserManagement key="User Management" />;
+      case "Viewer Requests": return <ViewerRequests key="Viewer Requests" />;
+      case "New Survey": return <SurveyForm key="New Survey" onNavigate={setActiveView} />;
+      case "My Surveys": return <SurveyorSubmissions key="My Surveys" />;
+      case "Assigned Data": return <ViewerDashboard key="Assigned Data" />;
       default: return <div className="p-12 text-center text-slate-400 font-bold">SELECT A VIEW</div>;
     }
   };
@@ -142,7 +143,9 @@ export default function Home() {
             </div>
           </header>
           <main className="flex-1 p-8 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">{renderContent()}</div>
+            <div className="max-w-7xl mx-auto" key={activeView}>
+              {renderContent()}
+            </div>
           </main>
         </SidebarInset>
       </div>

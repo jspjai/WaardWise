@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,7 +22,8 @@ import {
   TrendingUp,
   User,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { aiIssueSentimentExtractor, AiIssueSentimentExtractorOutput } from "@/ai/flows/ai-issue-sentiment-extractor";
@@ -39,7 +41,11 @@ const SECTIONS = [
 
 const SEVERITY_OPTIONS = ["Low", "Medium", "High"];
 
-export function SurveyForm() {
+interface SurveyFormProps {
+  onNavigate?: (view: string) => void;
+}
+
+export function SurveyForm({ onNavigate }: SurveyFormProps) {
   const { user } = useUser();
   const db = useFirestore();
   const [step, setStep] = useState(1);
@@ -131,6 +137,13 @@ export function SurveyForm() {
     setTimeout(() => {
       setIsSubmitted(true);
       setIsSubmitting(false);
+      
+      // Auto-redirect to My Submissions after 3 seconds
+      if (onNavigate) {
+        setTimeout(() => {
+          onNavigate("My Surveys");
+        }, 3000);
+      }
     }, 800);
   };
 
@@ -141,10 +154,23 @@ export function SurveyForm() {
           <CheckCircle2 className="w-10 h-10 text-emerald-600" />
         </div>
         <h1 className="text-2xl md:text-3xl font-headline font-bold mb-4 text-slate-900 tracking-tight">Survey Submitted!</h1>
-        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved and is now being processed for ward analytics.</p>
+        <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto leading-relaxed">Great work! The data has been securely saved. You will be redirected to your submission history in a few seconds.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button type="button" onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10">
+          <Button 
+            type="button" 
+            onClick={() => { setIsSubmitted(false); setStep(1); setAiResult(null); }} 
+            className="bg-primary hover:bg-primary/90 h-12 px-8 rounded-xl font-bold shadow-lg shadow-primary/10"
+          >
             Start New Survey
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline"
+            onClick={() => onNavigate?.("My Surveys")}
+            className="h-12 px-8 rounded-xl font-bold border-slate-200"
+          >
+            <History className="w-4 h-4 mr-2" />
+            View My Submissions
           </Button>
         </div>
       </div>

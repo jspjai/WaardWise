@@ -87,6 +87,7 @@ export function SurveyorSubmissions() {
     deleteDocumentNonBlocking(docRef);
     toast({ title: "Survey Deleted", description: "The record has been removed from history." });
     setDeleteDialogOpen(false);
+    setSelectedSurvey(null);
   };
 
   const triggerEdit = (survey: any) => {
@@ -104,6 +105,16 @@ export function SurveyorSubmissions() {
     });
     toast({ title: "Survey Updated", description: "Changes have been saved successfully." });
     setEditDialogOpen(false);
+    setSelectedSurvey(null);
+    setEditData({});
+  };
+
+  const handleCloseEdit = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      setSelectedSurvey(null);
+      setEditData({});
+    }
   };
 
   return (
@@ -253,7 +264,7 @@ export function SurveyorSubmissions() {
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={handleCloseEdit}>
         <DialogContent className="max-w-xl rounded-3xl border-none">
           <DialogHeader>
             <DialogTitle className="font-headline font-bold text-xl">Edit Survey Record</DialogTitle>
@@ -299,7 +310,7 @@ export function SurveyorSubmissions() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditDialogOpen(false)} className="rounded-xl h-12 font-bold">Cancel</Button>
+            <Button variant="ghost" onClick={() => handleCloseEdit(false)} className="rounded-xl h-12 font-bold">Cancel</Button>
             <Button onClick={handleSaveEdit} className="bg-primary rounded-xl h-12 px-8 font-bold shadow-lg shadow-primary/10">
               Save Changes
             </Button>
