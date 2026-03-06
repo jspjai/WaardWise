@@ -1,237 +1,95 @@
 {
   "entities": {
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
+    "AdminProfile": {
+      "title": "AdminProfile",
       "type": "object",
-      "description": "Represents a user account in the system, storing their basic profile information and role for access control.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the user."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the user, used for login.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "The assigned role of the user (e.g., 'Admin', 'Surveyor', 'Viewer')."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the user account (e.g., 'active', 'inactive', 'pending')."
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["ADMIN"] }
       },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "role",
-        "status"
-      ]
+      "required": ["id", "email", "role"]
+    },
+    "SurveyorProfile": {
+      "title": "SurveyorProfile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "assignedWardIds": { "type": "array", "items": { "type": "string" } },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "name", "email", "isActive"]
+    },
+    "CandidateProfile": {
+      "title": "CandidateProfile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "purchasedWardIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "email"]
+    },
+    "Ward": {
+      "title": "Ward",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "district": { "type": "string" },
+        "surveyCount": { "type": "number" },
+        "price": { "type": "number" },
+        "isAvailableForPurchase": { "type": "boolean" }
+      },
+      "required": ["id", "name", "district"]
     },
     "Survey": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Survey",
       "type": "object",
-      "description": "Stores metadata about a collected survey dataset, which can be uploaded by surveyors and accessed by viewers.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Survey entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title or name of the survey dataset."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of the survey's content or purpose."
-        },
-        "createdBy": {
-          "type": "string",
-          "description": "Reference to the UserProfile (Surveyor) who created and uploaded this survey. (Relationship: UserProfile 1:N Survey)"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The timestamp when the survey record was created.",
-          "format": "date-time"
-        }
+        "wardId": { "type": "string" },
+        "boothNumber": { "type": "string" },
+        "surveyorId": { "type": "string" },
+        "respondentName": { "type": "string" },
+        "householdVoterMood": { "type": "string", "enum": ["Pro-change", "Neutral", "Pro-continuity"] },
+        "topIssue": { "type": "string" },
+        "notes": { "type": "string" },
+        "submissionTimestamp": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "title",
-        "description",
-        "createdBy",
-        "createdAt"
-      ]
-    },
-    "ViewerRequest": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ViewerRequest",
-      "type": "object",
-      "description": "Records requests from potential viewers to gain access to specific survey data, subject to admin approval.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ViewerRequest entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the person submitting the access request."
-        },
-        "company": {
-          "type": "string",
-          "description": "The company or organization affiliated with the requester."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the requester.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "The phone number of the requester."
-        },
-        "surveyRequestedId": {
-          "type": "string",
-          "description": "Reference to the Survey entity that the viewer is requesting access to. (Relationship: Survey 1:N ViewerRequest)"
-        },
-        "purpose": {
-          "type": "string",
-          "description": "A description of the requester's purpose for needing access to the survey data."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the access request (e.g., 'pending', 'approved', 'rejected')."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "company",
-        "email",
-        "phone",
-        "surveyRequestedId",
-        "purpose",
-        "status"
-      ]
-    },
-    "SurveyAccess": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SurveyAccess",
-      "type": "object",
-      "description": "Defines which Viewer users have permission to access specific survey datasets, including the type of permission and an optional expiry date.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the SurveyAccess entity."
-        },
-        "viewerId": {
-          "type": "string",
-          "description": "Reference to the UserProfile (Viewer) who is granted access to the survey. (Relationship: UserProfile 1:N SurveyAccess)"
-        },
-        "surveyId": {
-          "type": "string",
-          "description": "Reference to the Survey entity that the viewer is granted access to. (Relationship: Survey 1:N SurveyAccess)"
-        },
-        "permission": {
-          "type": "string",
-          "description": "The type of permission granted (e.g., 'view', 'download')."
-        },
-        "expiryDate": {
-          "type": "string",
-          "description": "Optional date and time when the access permission will expire.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "viewerId",
-        "surveyId",
-        "permission"
-      ]
+      "required": ["wardId", "surveyorId", "submissionTimestamp"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profiles, roles, and status. Access is granted to the user themselves (matching {userId}) or to an Admin. Includes denormalized 'role' for authorization.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, corresponding to Firebase Authentication UID."
-            }
-          ]
-        }
-      },
-      {
-        "path": "surveys/{surveyId}",
-        "definition": {
-          "entityName": "Survey",
-          "schema": {
-            "$ref": "#/backend/entities/Survey"
-          },
-          "description": "Contains metadata for each survey. Access is granted to the 'createdBy' surveyor, to an Admin, or to viewers whose UIDs are in the 'assignedViewerIds' map. Includes denormalized 'assignedViewerIds' map for viewer authorization independence and 'createdBy' for surveyor ownership.",
-          "params": [
-            {
-              "name": "surveyId",
-              "description": "The unique identifier for the survey."
-            }
-          ]
-        }
-      },
-      {
-        "path": "viewer_requests/{requestId}",
-        "definition": {
-          "entityName": "ViewerRequest",
-          "schema": {
-            "$ref": "#/backend/entities/ViewerRequest"
-          },
-          "description": "Records requests from potential viewers. Users can create their own request (matching 'requesterId'). Admin has full access. Includes 'requesterId' for authorization independence of the submitting user.",
-          "params": [
-            {
-              "name": "requestId",
-              "description": "The unique identifier for the viewer access request."
-            }
-          ]
-        }
-      },
-      {
-        "path": "survey_access/{accessId}",
-        "definition": {
-          "entityName": "SurveyAccess",
-          "schema": {
-            "$ref": "#/backend/entities/SurveyAccess"
-          },
-          "description": "Defines explicit access grants for viewers to specific surveys. This collection primarily serves as the source of truth for a Cloud Function that denormalizes viewer permissions into the 'surveys' collection. Access is restricted to Admins (and internal Cloud Functions).",
-          "params": [
-            {
-              "name": "accessId",
-              "description": "The unique identifier for the survey access grant record."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The recommended Firestore structure is designed to be secure, scalable, and highly debuggable by strictly adhering to the core design principles, especially Authorization Independence and supporting Query Ability Patterns (QAPs).\n\n1.  \"users/{userId}\" (UserProfile):\n    *   Justification: This collection serves as the central repository for user profiles, including their assigned `role` and `status`. It directly implements the DBAC principle by storing roles within the database. The path structure `/users/{userId}` enables path-based authorization, where users can access their own profile document (`request.auth.uid == userId`). Admins are granted full access.\n    *   Authorization Independence: Fully achieved. Access to a user profile depends only on `request.auth.uid` matching the `{userId}` in the path or an explicit check for the 'Admin' role within the requesting user's own profile. No `get()` calls to other documents are necessary for authorization.\n    *   QAPs: Admin users can perform `list` operations to view all user profiles. Individual users can `get` their own profile, with rules enforcing `request.auth.uid == userId` for reads.\n\n2.  \"surveys/{surveyId}\" (Survey):\n    *   Justification: This is the primary collection for survey data. To satisfy both Authorization Independence and QAPs for Viewers, the `Survey` document schema is extended to include a denormalized `assignedViewerIds` map. This map will store `viewerId: true` for every viewer explicitly granted access to that survey via a `SurveyAccess` record. The `createdBy` field identifies the Surveyor owner.\n    *   Authorization Independence: Achieved through denormalization. \n        *   For Surveyors: Access relies on `request.auth.uid == resource.data.createdBy`, where `createdBy` is a field directly within the `Survey` document.\n        *   For Viewers: Access relies on `request.auth.uid in resource.data.assignedViewerIds`, where `assignedViewerIds` is a map also directly within the `Survey` document. \n        *   Admins have full access. \n        *   This eliminates the need for `get()` calls to `survey_access` or `users` within the `surveys` collection rules, ensuring atomic rule evaluation and simplifying debugging.\n    *   QAPs: \n        *   Surveyors can securely `list` their own surveys by querying `where createdBy == request.auth.uid`.\n        *   Viewers can securely `list` surveys assigned to them by querying `where 'assignedViewerIds.' + request.auth.uid + ' == true'`. In both cases, the security rules can verify that *every* document returned by the query adheres to the access criteria using only `resource.data` and `request.auth.uid`, thereby supporting QAPs (Rules are not Filters).\n\n3.  \"viewer_requests/{requestId}\" (ViewerRequest):\n    *   Justification: This collection stores requests from potential viewers. It includes a `requesterId` field to identify the user who submitted the request, enabling self-service for viewing one's own requests. The `status` field provides explicit state modeling (e.g., 'pending', 'approved', 'rejected').\n    *   Authorization Independence: Achieved through the `requesterId` field, allowing rules to check `request.auth.uid == resource.data.requesterId` for read/write on one's own requests (specifically for creation and perhaps status monitoring). Admins have full access to manage all requests. No `get()` calls are required for authorization.\n    *   QAPs: A user can `list` their own pending requests by querying `where requesterId == request.auth.uid`. Admins can `list` all requests.\n\n4.  \"survey_access/{accessId}\" (SurveyAccess):\n    *   Justification: This collection acts as the definitive source of truth for assigning specific surveys to viewers. It's a critical component for **Authorization Independence** indirectly. When `SurveyAccess` documents are created, updated, or deleted, a Cloud Function (not part of the Firestore rules) will be triggered. This Cloud Function will then update the denormalized `assignedViewerIds` map within the corresponding `surveys/{surveyId}` document.\n    *   Authorization Independence: Rules for this collection will be highly restricted, typically allowing only Admins or service accounts (via Cloud Functions) to create, read, update, or delete entries. Viewers and Surveyors do not directly use this collection for authorization checks against survey data. This separation of concerns ensures that the authorization logic for *accessing survey data* is self-contained within the `Survey` document itself.\n    *   QAPs: Primarily an administrative and system-level collection. Secure `list` operations for Admins are trivial, as they have full access."
+    "/roles_admin/{userId}": {
+      "schema": "AdminProfile",
+      "description": "Administrative users with full platform access."
+    },
+    "/surveyors/{userId}": {
+      "schema": "SurveyorProfile",
+      "description": "Field surveyors collecting ward-level data."
+    },
+    "/candidates/{userId}": {
+      "schema": "CandidateProfile",
+      "description": "Political candidates accessing purchased ward intelligence."
+    },
+    "/wards/{wardId}": {
+      "schema": "Ward",
+      "description": "Ward-level geographic and pricing information."
+    },
+    "/surveys/{surveyId}": {
+      "schema": "Survey",
+      "description": "Collected survey data points from field operations."
+    },
+    "/settings/{docId}": {
+      "schema": "object",
+      "description": "Global platform configuration settings."
+    }
   }
 }
