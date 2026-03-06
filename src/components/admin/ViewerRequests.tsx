@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useFirestore, useCollection, useMemoFirebase, createAuthAccountSecondary, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc, updateDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, setDoc } from "firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,11 @@ export function ViewerRequests() {
 
   const handleApproveAndCreate = async (req: ViewerRequest) => {
     if (!db || !req.email || !req.password) {
-      toast({ title: "Cannot Approve", description: "Request is missing email or password data.", variant: "destructive" });
+      toast({ 
+        title: "Cannot Approve", 
+        description: "Request is missing email or password data.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -49,8 +53,8 @@ export function ViewerRequests() {
       // 1. Create Auth Account using stored password
       const uid = await createAuthAccountSecondary(req.email, req.password);
       
-      // 2. Create User Profile
-      await updateDoc(doc(db, "users", uid), {
+      // 2. Create User Profile (MUST use setDoc because document doesn't exist yet)
+      await setDoc(doc(db, "users", uid), {
         id: uid,
         name: req.name,
         email: req.email,
@@ -64,6 +68,7 @@ export function ViewerRequests() {
       
       toast({ title: "Account Created", description: `Viewer account for ${req.name} is now active.` });
     } catch (error: any) {
+      console.error("Approval Error:", error);
       toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
     } finally {
       setProcessingId(null);
@@ -75,8 +80,8 @@ export function ViewerRequests() {
     try {
       await updateDoc(doc(db, "viewer_requests", id), { status: 'REJECTED' });
       toast({ title: "Request Rejected" });
-    } catch (error) {
-      toast({ title: "Reject Failed", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Reject Failed", description: error.message, variant: "destructive" });
     }
   };
 
