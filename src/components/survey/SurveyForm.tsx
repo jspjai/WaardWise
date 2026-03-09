@@ -75,7 +75,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     surveyDate: "" 
   });
 
-  // Handle dynamic date generation after hydration to avoid SSR mismatch
+  // Hydration Fix: Initialize dynamic values after mount
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -100,7 +100,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
 
   const handleAiAnalysis = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!formData.notes) return;
+    if (!formData.notes || formData.notes.length < 10) return;
     setIsAnalyzing(true);
     try {
       const result = await aiIssueSentimentExtractor({
@@ -115,7 +115,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
     }
   };
 
-  const handleSubmit = async (e: React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !db) return;
     
@@ -195,7 +195,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="border-none shadow-xl shadow-slate-200/30 bg-white rounded-3xl overflow-hidden">
           <CardContent className="pt-8 pb-10 px-5 md:px-8">
             {step === 1 && (
@@ -479,8 +479,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             </Button>
           ) : (
             <Button 
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
               disabled={isSubmitting}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 md:h-14 font-bold shadow-lg shadow-emerald-200 transition-all hover:scale-[1.02]"
             >
@@ -489,7 +488,7 @@ export function SurveyForm({ onNavigate }: SurveyFormProps) {
             </Button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

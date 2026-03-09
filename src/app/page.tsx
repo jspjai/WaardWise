@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +11,8 @@ import { TicketsManagement } from "@/components/admin/TicketsManagement";
 import { SurveyForm } from "@/components/survey/SurveyForm";
 import { SurveyorSubmissions } from "@/components/survey/SurveyorSubmissions";
 import { ViewerDashboard } from "@/components/viewer/ViewerDashboard";
+import { WardsBooths } from "@/components/admin/WardsBooths";
+import { AdminSettings } from "@/components/admin/AdminSettings";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Loader2, ShieldCheck, UserPlus, LogOut } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -111,6 +112,7 @@ export default function Home() {
       case "User Management": return <UserManagement />;
       case "Viewer Requests": return <ViewerRequests />;
       case "Tickets": return <TicketsManagement />;
+      case "Wards & Booths": return <WardsBooths />;
       case "New Survey": return <SurveyForm onNavigate={setActiveView} />;
       case "My Surveys": return <SurveyorSubmissions />;
       case "Assigned Data": return <ViewerDashboard />;

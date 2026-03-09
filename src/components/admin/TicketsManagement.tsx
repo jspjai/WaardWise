@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageSquare, CheckCircle, Clock } from "lucide-react";
+import { Loader2, MessageSquare, CheckCircle, Clock, Trash2, Mail, User } from "lucide-react";
 import { SupportTicket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -63,55 +62,59 @@ export function TicketsManagement() {
                     <TableCell className="pl-6 py-5">
                       <div className="space-y-0.5">
                         <p className="font-bold text-slate-900">{ticket.viewerName}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">{ticket.viewerEmail}</p>
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <Mail className="w-3 h-3 text-slate-300" />
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">{ticket.viewerEmail}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-md space-y-1">
-                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{ticket.message}</p>
+                      <div className="max-w-md space-y-1.5">
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2 italic">"{ticket.message}"</p>
                         <p className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5" />
-                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}
+                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'Recent'}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge className={cn(
-                        "text-[9px] font-black uppercase tracking-widest px-2 py-0.5",
-                        ticket.status === 'OPEN' ? 'bg-amber-100 text-amber-700' :
-                        ticket.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                      )}>
+                        "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 shadow-none",
+                        ticket.status === 'OPEN' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        ticket.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
+                        'bg-emerald-50 text-emerald-700 border-emerald-100'
+                      )} variant="outline">
                         {ticket.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6 space-x-2">
                       {ticket.status !== 'RESOLVED' ? (
-                        <>
+                        <div className="flex items-center justify-end gap-2">
                           <Button 
                             size="sm" 
                             variant="ghost" 
-                            className="text-primary hover:bg-primary/5 h-8 rounded-lg font-bold text-[10px]"
+                            className="text-primary hover:bg-primary/5 h-8 rounded-lg font-bold text-[10px] uppercase"
                             onClick={() => handleUpdateStatus(ticket.id, 'IN_PROGRESS')}
                           >
-                            In Progress
+                            Mark Progress
                           </Button>
                           <Button 
                             size="sm" 
                             variant="ghost" 
-                            className="text-emerald-600 hover:bg-emerald-50 h-8 rounded-lg font-bold text-[10px]"
+                            className="text-emerald-600 hover:bg-emerald-50 h-8 rounded-lg font-bold text-[10px] uppercase"
                             onClick={() => handleUpdateStatus(ticket.id, 'RESOLVED')}
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Resolve
                           </Button>
-                        </>
+                        </div>
                       ) : (
-                        <span className="text-[10px] font-bold text-slate-300 uppercase italic">Closed</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Closed</span>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
-                {(!tickets || tickets.length === 0) && (
+                {(!tickets || tickets.length === 0) && !isLoading && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-20 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
                       Zero active support inquiries
