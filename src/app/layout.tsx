@@ -4,7 +4,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'TRS Group | Political Survey Tool',
+  title: 'TRS Group | Ward Intelligence Portal',
   description: 'Advanced ward-level political survey and data collection platform by TRS Group.',
 };
 
